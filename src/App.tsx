@@ -8,6 +8,7 @@ import AuthModal from "@/components/AuthModal";
 import Navbar from "@/components/Navbar";
 import Index from "./pages/Index";
 import Subject from "./pages/Subject";
+import Chapter from "./pages/Chapter";
 import Lecture from "./pages/Lecture";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +26,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/subject/:slug" element={<Subject />} />
+            <Route path="/subject/:slug/chapter/:chapterId" element={<Chapter />} />
+            <Route path="/subject/:slug/chapter/:chapterId/lecture/:lectureId" element={<Lecture />} />
             <Route path="/subject/:slug/lecture/:lectureId" element={<Lecture />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

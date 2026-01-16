@@ -1,27 +1,31 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calculator, FlaskConical, Languages, BookOpenText } from 'lucide-react';
 import LectureCard from '@/components/LectureCard';
+import ChapterCard from '@/components/ChapterCard';
 import { Button } from '@/components/ui/button';
+import { getSubject } from '@/data/courseData';
 
-const subjectTitles: Record<string, string> = {
-  hindi: 'Hindi',
-  english: 'English',
-  maths: 'Maths',
-  science: 'Science',
+const subjectIcons: Record<string, React.ElementType> = {
+  hindi: Languages,
+  english: BookOpenText,
+  maths: Calculator,
+  science: FlaskConical,
 };
-
-const lectures = [
-  { title: 'Introduction to the Subject', duration: '15:30' },
-  { title: 'Basic Concepts and Fundamentals', duration: '22:45' },
-  { title: 'Advanced Topics Part 1', duration: '28:10' },
-  { title: 'Advanced Topics Part 2', duration: '31:20' },
-];
 
 const Subject: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const subjectTitle = subjectTitles[slug || ''] || 'Subject';
+  const subject = getSubject(slug || '');
+  const IconComponent = subjectIcons[slug || ''] || BookOpen;
+
+  if (!subject) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Subject not found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -48,18 +52,20 @@ const Subject: React.FC = () => {
         >
           <div className="flex items-center gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-xl gradient-primary">
-              <BookOpen className="h-7 w-7 text-primary-foreground" />
+              <IconComponent className="h-7 w-7 text-primary-foreground" />
             </div>
             <div>
               <h1 className="font-display text-3xl font-bold text-foreground">
-                {subjectTitle}
+                {subject.title}
               </h1>
-              <p className="text-muted-foreground">All Lectures</p>
+              <p className="text-muted-foreground">
+                {subject.hasChapters ? 'All Chapters' : 'All Lectures'}
+              </p>
             </div>
           </div>
         </motion.div>
 
-        {/* Lecture count */}
+        {/* Count badge */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -67,22 +73,39 @@ const Subject: React.FC = () => {
           className="mb-6"
         >
           <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary">
-            {lectures.length} Lectures
+            {subject.hasChapters 
+              ? `${subject.chapters?.length || 0} Chapters`
+              : `${subject.lectures?.length || 0} Lectures`
+            }
           </span>
         </motion.div>
 
-        {/* Lecture list */}
+        {/* Content */}
         <div className="mx-auto max-w-2xl space-y-4">
-          {lectures.map((lecture, index) => (
-            <LectureCard
-              key={index}
-              title={lecture.title}
-              lectureNumber={index + 1}
-              duration={lecture.duration}
-              subjectSlug={slug || ''}
-              delay={0.2 + index * 0.08}
-            />
-          ))}
+          {subject.hasChapters ? (
+            // Show chapters
+            subject.chapters?.map((chapter, index) => (
+              <ChapterCard
+                key={chapter.id}
+                chapter={chapter}
+                chapterNumber={chapter.id}
+                subjectSlug={slug || ''}
+                delay={0.2 + index * 0.08}
+              />
+            ))
+          ) : (
+            // Show lectures directly
+            subject.lectures?.map((lecture, index) => (
+              <LectureCard
+                key={lecture.id}
+                title={lecture.title}
+                lectureNumber={lecture.id}
+                duration="--:--"
+                subjectSlug={slug || ''}
+                delay={0.2 + index * 0.08}
+              />
+            ))
+          )}
         </div>
       </div>
     </div>
