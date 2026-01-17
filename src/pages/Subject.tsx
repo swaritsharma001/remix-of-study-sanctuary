@@ -1,10 +1,11 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Calculator, FlaskConical, Languages, BookOpenText, Play, Loader2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Calculator, FlaskConical, Languages, BookOpenText, Play, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLectures } from '@/hooks/useLectures';
 import { useSubjects } from '@/hooks/useSubjects';
+import { useWatchProgress } from '@/hooks/useWatchProgress';
 
 // Convert seconds to MM:SS format
 const formatDuration = (seconds: string | number): string => {
@@ -26,6 +27,7 @@ const Subject: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { data: subjects } = useSubjects();
   const { data: lectures, isLoading, error } = useLectures(slug);
+  const { getProgressPercent, isCompleted } = useWatchProgress();
   
   const subject = subjects?.find(s => s.id === slug);
   const IconComponent = subjectIcons[slug?.toLowerCase() || ''] || BookOpen;
@@ -104,42 +106,81 @@ const Subject: React.FC = () => {
         {/* Lectures list */}
         {lectures && lectures.length > 0 && (
           <div className="mx-auto max-w-2xl space-y-4">
-            {lectures.map((lecture, index) => (
-              <motion.div
-                key={lecture._id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + index * 0.08, type: 'spring', damping: 20 }}
-              >
-                <Link to={`/subject/${slug}/lecture/${lecture._id}`}>
-                  <motion.div
-                    whileHover={{ scale: 1.01, x: 8 }}
-                    whileTap={{ scale: 0.99 }}
-                    className="group flex items-center gap-4 rounded-xl bg-card p-4 shadow-card transition-all duration-200 hover:shadow-card-hover"
-                  >
-                    {/* Play button */}
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:gradient-primary">
-                      <Play className="h-5 w-5 text-primary transition-colors group-hover:text-primary-foreground" />
-                    </div>
+            {lectures.map((lecture, index) => {
+              const progressPercent = getProgressPercent(lecture._id);
+              const completed = isCompleted(lecture._id);
+              
+              return (
+                <motion.div
+                  key={lecture._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 + index * 0.08, type: 'spring', damping: 20 }}
+                >
+                  <Link to={`/subject/${slug}/lecture/${lecture._id}`}>
+                    <motion.div
+                      whileHover={{ scale: 1.01, x: 8 }}
+                      whileTap={{ scale: 0.99 }}
+                      className="group relative overflow-hidden rounded-xl bg-card p-4 shadow-card transition-all duration-200 hover:shadow-card-hover"
+                    >
+                      {/* Progress bar at bottom */}
+                      {progressPercent > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progressPercent}%` }}
+                            transition={{ duration: 0.5, ease: 'easeOut' }}
+                            className={`h-full ${completed ? 'bg-green-500' : 'bg-primary'}`}
+                          />
+                        </div>
+                      )}
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-muted-foreground">
-                        Lecture {index + 1}
-                      </p>
-                      <h3 className="font-semibold text-foreground truncate">
-                        {lecture.title}
-                      </h3>
-                    </div>
+                      <div className="flex items-center gap-4">
+                        {/* Play button / Completed indicator */}
+                        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                          completed 
+                            ? 'bg-green-500/20' 
+                            : 'bg-primary/10 group-hover:gradient-primary'
+                        }`}>
+                          {completed ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-500" />
+                          ) : (
+                            <Play className="h-5 w-5 text-primary transition-colors group-hover:text-primary-foreground" />
+                          )}
+                        </div>
 
-                    {/* Duration badge */}
-                    <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                      {formatDuration(lecture.duration)}
-                    </span>
-                  </motion.div>
-                </Link>
-              </motion.div>
-            ))}
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-muted-foreground">
+                              Lecture {index + 1}
+                            </p>
+                            {progressPercent > 0 && !completed && (
+                              <span className="text-xs text-primary">
+                                {Math.round(progressPercent)}% watched
+                              </span>
+                            )}
+                            {completed && (
+                              <span className="text-xs text-green-500 font-medium">
+                                Completed
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="font-semibold text-foreground truncate">
+                            {lecture.title}
+                          </h3>
+                        </div>
+
+                        {/* Duration badge */}
+                        <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                          {formatDuration(lecture.duration)}
+                        </span>
+                      </div>
+                    </motion.div>
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         )}
 

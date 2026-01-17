@@ -26,6 +26,8 @@ import {
 interface VideoPlayerProps {
   src: string;
   title: string;
+  lectureId?: string;
+  onProgressUpdate?: (currentTime: number, duration: number) => void;
 }
 
 interface SubtitleTrack {
@@ -34,7 +36,7 @@ interface SubtitleTrack {
   src: string;
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title }) => {
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, lectureId, onProgressUpdate }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -203,6 +205,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title }) => {
     const handleTimeUpdate = () => {
       setCurrentTime(video.currentTime);
       setProgress((video.currentTime / video.duration) * 100);
+      // Report progress for saving
+      if (onProgressUpdate && video.duration) {
+        onProgressUpdate(video.currentTime, video.duration);
+      }
     };
 
     const handleProgress = () => {
