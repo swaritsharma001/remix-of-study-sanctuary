@@ -32,9 +32,16 @@ export interface AuthKey {
   createdAt?: string;
 }
 
-// Get auth token from localStorage
+// Get auth token from cookie
 const getAuthToken = (): string | null => {
-  return localStorage.getItem('auth_token');
+  const cookies = document.cookie.split(';');
+  for (const cookie of cookies) {
+    const [cookieName, cookieValue] = cookie.trim().split('=');
+    if (cookieName === 'auth_token') {
+      return cookieValue;
+    }
+  }
+  return null;
 };
 
 // Create headers with auth token

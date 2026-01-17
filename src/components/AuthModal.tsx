@@ -18,11 +18,20 @@ const AuthModal: React.FC = () => {
     setError('');
     setIsLoading(true);
 
-    const success = await login(inputKey.trim());
+    const result = await login(inputKey.trim().toUpperCase());
     setIsLoading(false);
 
-    if (!success) {
-      setError('Invalid or already used auth key.');
+    if (!result.success) {
+      // Show specific error messages based on backend response
+      if (result.error?.includes('already used')) {
+        setError('❌ This key is already used on another device');
+      } else if (result.error?.includes('Invalid key')) {
+        setError('❌ Invalid auth key. Please check and try again.');
+      } else if (result.error?.includes('expired')) {
+        setError('⏳ Session expired. Please contact admin for a new key.');
+      } else {
+        setError(result.error || 'Authentication failed');
+      }
       setInputKey('');
     }
   };
