@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Loader2 } from 'lucide-react';
@@ -7,6 +7,7 @@ import YouTubePlayer from '@/components/YouTubePlayer';
 import { Button } from '@/components/ui/button';
 import { useLectures } from '@/hooks/useLectures';
 import { useSubjects } from '@/hooks/useSubjects';
+import { useWatchProgress } from '@/hooks/useWatchProgress';
 
 // Convert seconds to MM:SS format
 const formatDuration = (seconds: string | number): string => {
@@ -31,6 +32,8 @@ const Lecture: React.FC = () => {
     lectureId: string;
   }>();
   
+  const { saveProgress } = useWatchProgress();
+  
   const { data: subjects } = useSubjects();
   const { data: lectures, isLoading, error } = useLectures(slug);
   
@@ -38,6 +41,13 @@ const Lecture: React.FC = () => {
   const lecture = lectures?.find(l => l._id === lectureId);
   const lectureIndex = lectures?.findIndex(l => l._id === lectureId) ?? -1;
   
+  // Handle progress updates from video player
+  const handleProgressUpdate = useCallback((currentTime: number, duration: number) => {
+    if (lectureId) {
+      saveProgress(lectureId, currentTime, duration);
+    }
+  }, [lectureId, saveProgress]);
+
   // Get prev/next lectures
   const prevLecture = lectureIndex > 0 ? lectures?.[lectureIndex - 1] : null;
   const nextLecture = lectures && lectureIndex < lectures.length - 1 ? lectures[lectureIndex + 1] : null;
@@ -107,7 +117,12 @@ const Lecture: React.FC = () => {
           {videoType === 'youtube' ? (
             <YouTubePlayer url={lecture.link} title={lecture.title} />
           ) : (
-            <VideoPlayer src={lecture.link} title={lecture.title} />
+            <VideoPlayer 
+              src={lecture.link} 
+              title={lecture.title} 
+              lectureId={lectureId}
+              onProgressUpdate={handleProgressUpdate}
+            />
           )}
         </motion.div>
 
