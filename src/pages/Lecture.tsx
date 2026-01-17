@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/button';
 import { useLectures } from '@/hooks/useLectures';
 import { useSubjects } from '@/hooks/useSubjects';
 
+// Convert seconds to MM:SS format
+const formatDuration = (seconds: string | number): string => {
+  const totalSeconds = typeof seconds === 'string' ? parseInt(seconds, 10) : seconds;
+  if (isNaN(totalSeconds)) return '--:--';
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 // Helper to detect video type from URL
 const getVideoType = (url: string): 'youtube' | 'hls' => {
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -114,7 +123,7 @@ const Lecture: React.FC = () => {
           </h2>
           <p className="mt-2 text-muted-foreground">
             This lecture covers important concepts in {subject?.subject || 'this subject'}. 
-            Duration: {lecture.duration}. Take notes and practice the exercises to reinforce your learning.
+            Duration: {formatDuration(lecture.duration)}. Take notes and practice the exercises to reinforce your learning.
           </p>
 
           {/* Navigation buttons */}
