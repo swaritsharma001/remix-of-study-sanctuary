@@ -6,6 +6,15 @@ import { Button } from '@/components/ui/button';
 import { useLectures } from '@/hooks/useLectures';
 import { useSubjects } from '@/hooks/useSubjects';
 
+// Convert seconds to MM:SS format
+const formatDuration = (seconds: string | number): string => {
+  const totalSeconds = typeof seconds === 'string' ? parseInt(seconds, 10) : seconds;
+  if (isNaN(totalSeconds)) return '--:--';
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 const subjectIcons: Record<string, React.ElementType> = {
   hindi: Languages,
   english: BookOpenText,
@@ -125,7 +134,7 @@ const Subject: React.FC = () => {
 
                     {/* Duration badge */}
                     <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                      {lecture.duration}
+                      {formatDuration(lecture.duration)}
                     </span>
                   </motion.div>
                 </Link>
