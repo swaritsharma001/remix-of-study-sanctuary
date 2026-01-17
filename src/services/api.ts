@@ -32,12 +32,10 @@ export interface AuthKey {
   createdAt?: string;
 }
 
-// Clear all auth cookies
+// Clear all auth cookies (no reload - let React handle state)
 export const clearAuthCookies = () => {
   document.cookie = 'auth_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   document.cookie = 'auth_expiry=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-  // Force page reload to show auth modal
-  window.location.reload();
 };
 
 // Get auth token from cookie
@@ -61,11 +59,12 @@ const getAuthHeaders = (): HeadersInit => {
   };
 };
 
-// Handle API errors - clear cookies on auth errors
+// Handle API errors - clear cookies on auth errors and throw with status
 const handleApiError = (response: Response, errorMessage: string) => {
   if (response.status === 401 || response.status === 403) {
-    // Auth error - clear cookies and reload
+    // Auth error - clear cookies, React Query will handle the error
     clearAuthCookies();
+    throw new Error('AUTH_ERROR');
   }
   throw new Error(errorMessage);
 };

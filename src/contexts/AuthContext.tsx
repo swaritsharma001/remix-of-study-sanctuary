@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { useAuthKey } from '@/services/api';
 
 interface AuthContextType {
@@ -6,6 +6,7 @@ interface AuthContextType {
   token: string | null;
   login: (key: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  checkAuthStatus: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,8 +39,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    // Check for existing token in cookies
+  const checkAuthStatus = useCallback(() => {
     const savedToken = getCookie(AUTH_TOKEN_COOKIE);
     const savedExpiry = getCookie(AUTH_EXPIRY_COOKIE);
     
@@ -48,13 +48,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (expiryDate > new Date()) {
         setToken(savedToken);
         setIsAuthenticated(true);
-      } else {
-        // Token expired, clear it
-        deleteCookie(AUTH_TOKEN_COOKIE);
-        deleteCookie(AUTH_EXPIRY_COOKIE);
+        return;
       }
     }
+    // No valid token found
+    setToken(null);
+    setIsAuthenticated(false);
   }, []);
+
+  useEffect(() => {
+    checkAuthStatus();
+    
+    // Check auth status periodically (every 5 seconds) to catch cookie changes
+    const interval = setInterval(checkAuthStatus, 5000);
+    return () => clearInterval(interval);
+  }, [checkAuthStatus]);
 
   const login = async (key: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -81,7 +89,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, token, login, logout, checkAuthStatus }}>
       {children}
     </AuthContext.Provider>
   );
