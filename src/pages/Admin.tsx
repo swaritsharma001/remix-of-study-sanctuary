@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -43,6 +43,7 @@ const Admin = () => {
   const [keyType, setKeyType] = useState<'trial' | 'permanent'>('permanent');
   const [creatingKey, setCreatingKey] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [keyFilter, setKeyFilter] = useState<'all' | 'used' | 'unused'>('all');
   
   // Subject form state
   const [subjectName, setSubjectName] = useState('');
@@ -278,6 +279,62 @@ const Admin = () => {
           
           {/* Keys Tab */}
           <TabsContent value="keys">
+            {/* Key Statistics */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Keys</p>
+                      <p className="text-2xl font-bold text-foreground">{keys.length}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                      <Key className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Available</p>
+                      <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{keys.filter(k => !k.used).length}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                      <KeyRound className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Used</p>
+                      <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">{keys.filter(k => k.used).length}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-rose-500/20 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-violet-500/10 to-violet-500/5 border-violet-500/20">
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Permanent</p>
+                      <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">{keys.filter(k => k.type === 'permanent').length}</p>
+                    </div>
+                    <div className="h-10 w-10 rounded-full bg-violet-500/20 flex items-center justify-center">
+                      <Shield className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -311,76 +368,141 @@ const Admin = () => {
               </CardContent>
             </Card>
 
-            {/* Keys List */}
+            {/* Keys List with Filter Tabs */}
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>All Auth Keys</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    Auth Keys Management
+                  </CardTitle>
                   <Button variant="ghost" size="sm" onClick={loadKeys}>
                     Refresh
                   </Button>
-                </CardTitle>
+                </div>
+                {/* Filter Tabs */}
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    variant={keyFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setKeyFilter('all')}
+                    className="flex-1 sm:flex-none"
+                  >
+                    All ({keys.length})
+                  </Button>
+                  <Button
+                    variant={keyFilter === 'unused' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setKeyFilter('unused')}
+                    className="flex-1 sm:flex-none"
+                  >
+                    <span className="hidden sm:inline">Available</span>
+                    <span className="sm:hidden">Free</span>
+                    <Badge variant="secondary" className="ml-2 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                      {keys.filter(k => !k.used).length}
+                    </Badge>
+                  </Button>
+                  <Button
+                    variant={keyFilter === 'used' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setKeyFilter('used')}
+                    className="flex-1 sm:flex-none"
+                  >
+                    Used
+                    <Badge variant="secondary" className="ml-2 bg-rose-500/20 text-rose-700 dark:text-rose-300">
+                      {keys.filter(k => k.used).length}
+                    </Badge>
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {keysLoading ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ) : keys.length > 0 ? (
-                  <div className="space-y-3">
-                    <AnimatePresence>
-                      {keys.map((key) => (
-                        <motion.div
-                          key={key._id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, x: -20 }}
-                          className="flex items-center justify-between p-4 bg-muted rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <code className="text-sm font-mono bg-background px-2 py-1 rounded">
-                                {key.authKey}
-                              </code>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                                onClick={() => handleCopyKey(key.authKey)}
-                              >
-                                {copiedKey === key.authKey ? (
-                                  <Check className="h-3 w-3 text-green-500" />
-                                ) : (
-                                  <Copy className="h-3 w-3" />
-                                )}
-                              </Button>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              {key.name && (
-                                <span className="text-muted-foreground">{key.name}</span>
-                              )}
-                              <Badge variant={key.type === 'permanent' ? 'default' : 'secondary'}>
-                                {key.type}
-                              </Badge>
-                              <Badge variant={key.used ? 'destructive' : 'outline'}>
-                                {key.used ? 'Used' : 'Available'}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={() => handleDeleteKey(key._id)}
+                ) : (() => {
+                  const filteredKeys = keys.filter(key => {
+                    if (keyFilter === 'used') return key.used;
+                    if (keyFilter === 'unused') return !key.used;
+                    return true;
+                  });
+                  
+                  return filteredKeys.length > 0 ? (
+                    <div className="space-y-3">
+                      <AnimatePresence>
+                        {filteredKeys.map((key) => (
+                          <motion.div
+                            key={key._id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className={`flex items-center justify-between p-4 rounded-lg border ${
+                              key.used 
+                                ? 'bg-rose-500/5 border-rose-500/20' 
+                                : 'bg-emerald-500/5 border-emerald-500/20'
+                            }`}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">No keys found</p>
-                )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <code className="text-sm font-mono bg-background px-2 py-1 rounded truncate max-w-[200px] sm:max-w-none">
+                                  {key.authKey}
+                                </code>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 shrink-0"
+                                  onClick={() => handleCopyKey(key.authKey)}
+                                >
+                                  {copiedKey === key.authKey ? (
+                                    <Check className="h-3 w-3 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-sm">
+                                {key.name && (
+                                  <span className="text-muted-foreground">{key.name}</span>
+                                )}
+                                <Badge variant={key.type === 'permanent' ? 'default' : 'secondary'}>
+                                  {key.type}
+                                </Badge>
+                                <Badge 
+                                  variant="outline"
+                                  className={key.used 
+                                    ? 'border-rose-500/50 text-rose-600 dark:text-rose-400 bg-rose-500/10' 
+                                    : 'border-emerald-500/50 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
+                                  }
+                                >
+                                  {key.used ? '● Used' : '○ Available'}
+                                </Badge>
+                              </div>
+                            </div>
+                            <Button
+                              variant="destructive"
+                              size="icon"
+                              className="shrink-0 ml-2"
+                              onClick={() => handleDeleteKey(key._id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <KeyRound className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                      <p className="text-muted-foreground">
+                        {keyFilter === 'used' 
+                          ? 'No used keys found' 
+                          : keyFilter === 'unused' 
+                            ? 'No available keys found' 
+                            : 'No keys found'}
+                      </p>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </TabsContent>
