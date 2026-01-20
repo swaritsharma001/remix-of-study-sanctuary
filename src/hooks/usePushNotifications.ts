@@ -36,9 +36,23 @@ export const usePushNotifications = () => {
     }
   }, []);
 
+  const getPushRegistration = async () => {
+    // Ensure our push-capable SW is registered (the PWA SW may not handle `push` events)
+    const existing = await navigator.serviceWorker.getRegistration('/');
+
+    // If the existing SW is already our push SW, reuse it; otherwise register our own.
+    if (existing?.active?.scriptURL?.includes('sw-push.js')) {
+      return existing;
+    }
+
+    const reg = await navigator.serviceWorker.register('/sw-push.js', { scope: '/' });
+    await navigator.serviceWorker.ready;
+    return reg;
+  };
+
   const checkSubscription = async () => {
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getPushRegistration();
       const subscription = await registration.pushManager.getSubscription();
       setIsSubscribed(!!subscription);
     } catch (error) {
@@ -49,6 +63,11 @@ export const usePushNotifications = () => {
   const subscribe = useCallback(async () => {
     if (!isSupported) {
       console.error('Push notifications not supported');
+      return false;
+    }
+
+    if (!VAPID_PUBLIC_KEY) {
+      console.error('Missing VAPID public key (VITE_VAPID_PUBLIC_KEY)');
       return false;
     }
 
@@ -65,8 +84,8 @@ export const usePushNotifications = () => {
         return false;
       }
 
-      // Get service worker registration
-      const registration = await navigator.serviceWorker.ready;
+      // Get (or register) service worker registration
+      const registration = await getPushRegistration();
 
       // Subscribe to push notifications
       const subscription = await registration.pushManager.subscribe({
@@ -102,7 +121,7 @@ export const usePushNotifications = () => {
     setIsLoading(true);
 
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await getPushRegistration();
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
