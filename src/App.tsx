@@ -14,6 +14,7 @@ import Subject from "./pages/Subject";
 import Chapter from "./pages/Chapter";
 import Lecture from "./pages/Lecture";
 import Admin from "./pages/Admin";
+import Dashboard from "./pages/Dashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => {
               <Navbar />
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/subject/:slug" element={<Subject />} />
                 <Route path="/subject/:slug/chapter/:chapterId" element={<Chapter />} />
                 <Route path="/subject/:slug/chapter/:chapterId/lecture/:lectureId" element={<Lecture />} />
