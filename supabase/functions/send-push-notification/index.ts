@@ -135,11 +135,18 @@ serve(async (req) => {
         });
 
         // IMPORTANT: Empty body => no encryption needed.
+        // Some push services still expect `Crypto-Key` and `Content-Length: 0`.
         const res = await fetch(sub.endpoint, {
           method: "POST",
           headers: {
-            Authorization: `vapid t=${jwt}, k=${vapidPublicKey}`,
+            // Standard VAPID header format used by most push services (incl. FCM)
+            Authorization: `WebPush ${jwt}`,
             TTL: "60",
+            Urgency: "high",
+            "Content-Length": "0",
+            "Content-Type": "application/octet-stream",
+            // Provide the VAPID public key explicitly
+            "Crypto-Key": `p256ecdsa=${vapidPublicKey}`,
           },
         });
 
