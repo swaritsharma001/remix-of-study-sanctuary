@@ -21,7 +21,7 @@ const NotificationSettings: React.FC = () => {
       const success = await subscribe();
       if (success) {
         toast({
-          title: "Notifications enabled! 🔔",
+          title: "Notifications enabled",
           description: "You'll be notified when new lectures are added.",
         });
       } else if (permission === 'denied') {
@@ -29,6 +29,12 @@ const NotificationSettings: React.FC = () => {
           variant: "destructive",
           title: "Permission denied",
           description: "Please enable notifications in your browser settings.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Couldn't enable notifications",
+          description: "Please refresh and try again (the app may need to load the push key).",
         });
       }
     }

@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// VAPID public key - this should match the one in your backend
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
+// VAPID public key can be provided at build-time, but we also fetch it from the backend as fallback
+const VAPID_PUBLIC_KEY_ENV = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
 
 function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -24,6 +24,26 @@ export const usePushNotifications = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [vapidPublicKey, setVapidPublicKey] = useState<string>(VAPID_PUBLIC_KEY_ENV);
+
+  const loadVapidKey = useCallback(async () => {
+    if (vapidPublicKey) return vapidPublicKey;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('vapid-public-key');
+      if (error) throw error;
+
+      const key = (data as any)?.publicKey as string | undefined;
+      if (key) {
+        setVapidPublicKey(key);
+        return key;
+      }
+    } catch (e) {
+      console.error('Failed to load VAPID public key:', e);
+    }
+
+    return '';
+  }, [vapidPublicKey]);
 
   useEffect(() => {
     // Check if push notifications are supported
@@ -33,6 +53,8 @@ export const usePushNotifications = () => {
     if (supported) {
       setPermission(Notification.permission);
       checkSubscription();
+      // ensure we have a key early
+      void loadVapidKey();
     }
   }, []);
 
@@ -66,21 +88,21 @@ export const usePushNotifications = () => {
       return false;
     }
 
-    if (!VAPID_PUBLIC_KEY) {
-      console.error('Missing VAPID public key (VITE_VAPID_PUBLIC_KEY)');
-      return false;
-    }
-
     setIsLoading(true);
 
     try {
       // Request notification permission
-      const permission = await Notification.requestPermission();
-      setPermission(permission);
+      const newPermission = await Notification.requestPermission();
+      setPermission(newPermission);
 
-      if (permission !== 'granted') {
+      if (newPermission !== 'granted') {
         console.log('Notification permission denied');
-        setIsLoading(false);
+        return false;
+      }
+
+      const key = await loadVapidKey();
+      if (!key) {
+        console.error('Missing VAPID public key');
         return false;
       }
 
@@ -90,7 +112,7 @@ export const usePushNotifications = () => {
       // Subscribe to push notifications
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        applicationServerKey: urlBase64ToUint8Array(key),
       });
 
       // Send subscription to backend
@@ -115,7 +137,7 @@ export const usePushNotifications = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported]);
+  }, [isSupported, loadVapidKey]);
 
   const unsubscribe = useCallback(async () => {
     setIsLoading(true);
