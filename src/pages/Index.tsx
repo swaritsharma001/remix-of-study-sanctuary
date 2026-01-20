@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { BookOpenText, Calculator, FlaskConical, Languages, BookOpen, Loader2 } from 'lucide-react';
 import SubjectCard from '@/components/SubjectCard';
 import { useSubjects } from '@/hooks/useSubjects';
+import logo from '@/assets/logo.png';
 
 // Icon mapping for subjects
 const iconMap: Record<string, React.ElementType> = {
@@ -29,13 +30,21 @@ const Index: React.FC = () => {
   return (
     <div className="min-h-screen gradient-hero">
       <div className="container mx-auto px-4 py-12">
-        {/* Header */}
+        {/* Header with Logo */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="mb-12 text-center"
         >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1, type: 'spring', damping: 15 }}
+            className="mx-auto mb-6 flex h-28 w-28 items-center justify-center"
+          >
+            <img src={logo} alt="StudyX Logo" className="h-28 w-28 object-contain drop-shadow-lg" />
+          </motion.div>
           <h1 className="font-display text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent sm:text-5xl">
             StudyX → All Subjects
           </h1>

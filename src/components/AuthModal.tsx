@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { KeyRound, Sparkles, AlertCircle } from 'lucide-react';
+import { Sparkles, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import logo from '@/assets/logo.png';
 
 const AuthModal: React.FC = () => {
   const { isAuthenticated, login } = useAuth();
@@ -61,14 +62,14 @@ const AuthModal: React.FC = () => {
           <div className="h-1.5 w-full gradient-primary" />
 
           <div className="p-8">
-            {/* Icon */}
+            {/* Logo */}
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring', damping: 15 }}
-              className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary animate-pulse-glow"
+              className="mx-auto mb-6 flex h-24 w-24 items-center justify-center"
             >
-              <KeyRound className="h-8 w-8 text-primary-foreground" />
+              <img src={logo} alt="StudyX Logo" className="h-24 w-24 object-contain drop-shadow-lg" />
             </motion.div>
 
             {/* Title */}
@@ -78,8 +79,8 @@ const AuthModal: React.FC = () => {
               transition={{ delay: 0.3 }}
               className="text-center"
             >
-              <h2 className="font-display text-2xl font-bold text-foreground">
-                Welcome to Subject Topper
+              <h2 className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                Welcome to StudyX
               </h2>
               <p className="mt-2 text-muted-foreground">
                 Enter your auth key to access the platform
