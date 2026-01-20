@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogOut, Home } from 'lucide-react';
+import { LogOut, Home, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import SearchBar from '@/components/SearchBar';
 import logo from '@/assets/logo.png';
 
 const Navbar: React.FC = () => {
@@ -36,7 +37,7 @@ const Navbar: React.FC = () => {
         </Link>
 
         {/* Navigation */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           {location.pathname !== '/' && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -54,6 +55,29 @@ const Navbar: React.FC = () => {
               </Link>
             </motion.div>
           )}
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <Link to="/dashboard">
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`gap-2 rounded-lg ${
+                  location.pathname === '/dashboard' 
+                    ? 'text-primary' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden sm:inline">Dashboard</span>
+              </Button>
+            </Link>
+          </motion.div>
+
+          <SearchBar />
 
           <ThemeToggle />
 
