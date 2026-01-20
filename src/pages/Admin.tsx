@@ -105,6 +105,12 @@ const Admin = () => {
   };
 
   const handleCreateKey = async () => {
+    // Name is required for permanent keys
+    if (keyType === 'permanent' && !keyName.trim()) {
+      toast({ title: 'Error', description: 'Name is required for permanent keys', variant: 'destructive' });
+      return;
+    }
+    
     setCreatingKey(true);
     try {
       await createKey({ type: keyType, name: keyName || undefined });
@@ -344,9 +350,10 @@ const Admin = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <Input
-                  placeholder="Name (optional - leave empty to auto-generate)"
+                  placeholder={keyType === 'permanent' ? "Name of student (required)" : "Name of student (optional)"}
                   value={keyName}
                   onChange={(e) => setKeyName(e.target.value)}
+                  required={keyType === 'permanent'}
                 />
                 <Select value={keyType} onValueChange={(v) => setKeyType(v as 'trial' | 'permanent')}>
                   <SelectTrigger>
