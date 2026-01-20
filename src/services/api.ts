@@ -1,5 +1,5 @@
-// API Service to connect to your backend
-const API_BASE_URL = 'https://f9a4744f-c12b-4e45-829f-6b93e3816213-00-2kvez0r79qcb8.kirk.replit.dev';
+// API Service to connect to StudyX backend
+const API_BASE_URL = 'https://api.mintgram.live';
 
 export interface ApiSubject {
   _id: string;
