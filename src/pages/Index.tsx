@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { BookOpenText, Calculator, FlaskConical, Languages, BookOpen, Loader2 } from 'lucide-react';
 import SubjectCard from '@/components/SubjectCard';
 import { useSubjects } from '@/hooks/useSubjects';
+import Footer from '@/components/Footer';
 import logo from '@/assets/logo.png';
 
 // Icon mapping for subjects
@@ -28,83 +29,76 @@ const Index: React.FC = () => {
   const { data: subjects, isLoading, error } = useSubjects();
 
   return (
-    <div className="min-h-screen gradient-hero">
-      <div className="container mx-auto px-4 py-12">
-        {/* Header with Logo */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-12 text-center"
-        >
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-1 gradient-hero">
+        <div className="container mx-auto px-4 py-12">
+          {/* Header with Logo */}
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.1, type: 'spring', damping: 15 }}
-            className="mx-auto mb-6 flex h-28 w-28 items-center justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-12 text-center"
           >
-            <img src={logo} alt="StudyX Logo" className="h-28 w-28 object-contain drop-shadow-lg" />
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.1, type: 'spring', damping: 15 }}
+              className="mx-auto mb-6 flex h-28 w-28 items-center justify-center"
+            >
+              <img src={logo} alt="StudyX Logo" className="h-28 w-28 object-contain drop-shadow-lg" />
+            </motion.div>
+            <h1 className="font-display text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent sm:text-5xl">
+              StudyX → All Subjects
+            </h1>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Choose a subject to start your learning journey
+            </p>
           </motion.div>
-          <h1 className="font-display text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent sm:text-5xl">
-            StudyX → All Subjects
-          </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Choose a subject to start your learning journey
-          </p>
-        </motion.div>
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-3 text-muted-foreground">Loading subjects...</span>
-          </div>
-        )}
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-3 text-muted-foreground">Loading subjects...</span>
+            </div>
+          )}
 
-        {/* Error state */}
-        {error && (
-          <div className="mx-auto max-w-md rounded-xl bg-destructive/10 p-6 text-center">
-            <p className="text-destructive">Failed to load subjects. Please try again later.</p>
-          </div>
-        )}
+          {/* Error state */}
+          {error && (
+            <div className="mx-auto max-w-md rounded-xl bg-destructive/10 p-6 text-center">
+              <p className="text-destructive">Failed to load subjects. Please try again later.</p>
+            </div>
+          )}
 
-        {/* Subject Grid */}
-        {subjects && subjects.length > 0 && (
-          <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2">
-            {subjects.map((subject, index) => (
-              <SubjectCard
-                key={subject._id}
-                title={subject.subject}
-                icon={iconMap[subject.id.toLowerCase()] || BookOpen}
-                slug={subject.id}
-                color={colorMap[subject.id.toLowerCase()] || defaultColor}
-                totalVideos={subject.totalVideos}
-                delay={0.1 + index * 0.1}
-              />
-            ))}
-          </div>
-        )}
+          {/* Subject Grid */}
+          {subjects && subjects.length > 0 && (
+            <div className="mx-auto grid max-w-4xl gap-6 sm:grid-cols-2">
+              {subjects.map((subject, index) => (
+                <SubjectCard
+                  key={subject._id}
+                  title={subject.subject}
+                  icon={iconMap[subject.id.toLowerCase()] || BookOpen}
+                  slug={subject.id}
+                  color={colorMap[subject.id.toLowerCase()] || defaultColor}
+                  totalVideos={subject.totalVideos}
+                  delay={0.1 + index * 0.1}
+                />
+              ))}
+            </div>
+          )}
 
-        {/* Empty state */}
-        {subjects && subjects.length === 0 && (
-          <div className="mx-auto max-w-md rounded-xl bg-card p-8 text-center shadow-card">
-            <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-            <p className="mt-4 text-muted-foreground">No subjects available yet.</p>
-          </div>
-        )}
-
-        {/* Footer decoration */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="mt-16 text-center"
-        >
-          <p className="text-sm text-muted-foreground">
-            🎯 Learn smarter, not harder
-          </p>
-        </motion.div>
+          {/* Empty state */}
+          {subjects && subjects.length === 0 && (
+            <div className="mx-auto max-w-md rounded-xl bg-card p-8 text-center shadow-card">
+              <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+              <p className="mt-4 text-muted-foreground">No subjects available yet.</p>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
