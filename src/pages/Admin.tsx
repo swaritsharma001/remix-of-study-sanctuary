@@ -13,6 +13,7 @@ import {
   AuthKey 
 } from '@/services/api';
 import { supabase } from '@/integrations/supabase/client';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,6 +32,7 @@ const Admin = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: subjects, isLoading: subjectsLoading } = useSubjects();
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, subscribe: pushSubscribe } = usePushNotifications();
   
   // Admin auth state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -64,6 +66,7 @@ const Admin = () => {
   const [notificationBody, setNotificationBody] = useState('');
   const [notificationUrl, setNotificationUrl] = useState('/');
   const [sendingNotification, setSendingNotification] = useState(false);
+  const [sendingTestPush, setSendingTestPush] = useState(false);
   
   // View lectures state
   const [viewSubjectId, setViewSubjectId] = useState('');
@@ -260,7 +263,51 @@ const Admin = () => {
     }
   };
 
-  // Admin Login Screen
+  const handleTestPushToDevice = async () => {
+    if (!pushSupported) {
+      toast({ title: 'Not supported', description: 'Push notifications are not supported in this browser', variant: 'destructive' });
+      return;
+    }
+
+    setSendingTestPush(true);
+    try {
+      // Ensure subscription exists
+      if (!pushSubscribed) {
+        const ok = await pushSubscribe();
+        if (!ok) {
+          toast({ title: 'Subscription failed', description: 'Could not subscribe to push notifications', variant: 'destructive' });
+          return;
+        }
+      }
+
+      // Get current subscription endpoint
+      const registration = await navigator.serviceWorker.getRegistration('/');
+      const sub = await registration?.pushManager.getSubscription();
+      if (!sub) {
+        toast({ title: 'No subscription', description: 'Could not find your push subscription', variant: 'destructive' });
+        return;
+      }
+
+      const { error } = await supabase.functions.invoke('send-push-notification', {
+        body: {
+          title: 'Test Notification 🚀',
+          body: 'If you see this, push notifications are working!',
+          url: '/admin',
+          endpoint: sub.endpoint, // send to this device only
+        },
+      });
+
+      if (error) throw error;
+
+      toast({ title: 'Test sent!', description: 'Check your notifications' });
+    } catch (err) {
+      console.error('Test push error:', err);
+      toast({ title: 'Error', description: 'Failed to send test push', variant: 'destructive' });
+    } finally {
+      setSendingTestPush(false);
+    }
+  };
+
   if (!isAdminLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -787,18 +834,32 @@ const Admin = () => {
                     Where should the notification take users when clicked?
                   </p>
                 </div>
-                <Button 
-                  onClick={handleSendNotification} 
-                  disabled={sendingNotification || !notificationTitle.trim() || !notificationBody.trim()}
-                  className="w-full"
-                >
-                  {sendingNotification ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-2" />
-                  )}
-                  Send Notification
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleSendNotification} 
+                    disabled={sendingNotification || !notificationTitle.trim() || !notificationBody.trim()}
+                    className="flex-1"
+                  >
+                    {sendingNotification ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Send className="h-4 w-4 mr-2" />
+                    )}
+                    Send to All
+                  </Button>
+                  <Button 
+                    onClick={handleTestPushToDevice} 
+                    disabled={sendingTestPush}
+                    variant="outline"
+                  >
+                    {sendingTestPush ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Smartphone className="h-4 w-4 mr-2" />
+                    )}
+                    Test on This Device
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 

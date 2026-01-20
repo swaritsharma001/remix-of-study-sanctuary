@@ -75,7 +75,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, body, icon, url } = await req.json();
+    const { title, body, icon, url, endpoint } = await req.json();
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -88,14 +88,30 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get all push subscriptions
-    const { data: subscriptions, error } = await supabase
-      .from("push_subscriptions")
-      .select("*");
+    // If an endpoint is provided, send only to that subscription
+    let subscriptions;
+    if (endpoint) {
+      const { data, error } = await supabase
+        .from("push_subscriptions")
+        .select("*")
+        .eq("endpoint", endpoint);
 
-    if (error) {
-      console.error("Error fetching subscriptions:", error);
-      throw error;
+      if (error) {
+        console.error("Error fetching subscription:", error);
+        throw error;
+      }
+      subscriptions = data;
+    } else {
+      // Get all push subscriptions
+      const { data, error } = await supabase
+        .from("push_subscriptions")
+        .select("*");
+
+      if (error) {
+        console.error("Error fetching subscriptions:", error);
+        throw error;
+      }
+      subscriptions = data;
     }
 
     console.log(`Sending push to ${subscriptions?.length || 0} subscribers`);
