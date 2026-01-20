@@ -16,6 +16,7 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import { useSubjects } from '@/hooks/useSubjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import NotificationSettings from '@/components/NotificationSettings';
 import Footer from '@/components/Footer';
 
 const Dashboard: React.FC = () => {
@@ -91,6 +92,11 @@ const Dashboard: React.FC = () => {
           <p className="mt-2 text-muted-foreground">
             Track your learning progress and pick up where you left off
           </p>
+          
+          {/* Notification Settings */}
+          <div className="mt-6">
+            <NotificationSettings />
+          </div>
         </motion.div>
 
         {/* Stats Grid */}
