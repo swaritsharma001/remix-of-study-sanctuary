@@ -4,16 +4,26 @@
 self.addEventListener('push', function(event) {
   console.log('[Service Worker] Push received');
 
+  // Use absolute URLs for icons (required for proper display on Android)
+  const origin = self.location.origin;
+  const defaultIcon = origin + '/favicon.png';
+  const badgeIcon = origin + '/pwa-192x192.png';
+
   let data = {
     title: 'StudyX',
     body: 'New content available!',
-    icon: '/pwa-192x192.png',
+    icon: defaultIcon,
     url: '/',
   };
 
   if (event.data) {
     try {
-      data = { ...data, ...event.data.json() };
+      const payload = event.data.json();
+      data = { ...data, ...payload };
+      // Ensure icon is absolute URL
+      if (data.icon && !data.icon.startsWith('http')) {
+        data.icon = origin + data.icon;
+      }
     } catch (e) {
       data.body = event.data.text();
     }
@@ -22,7 +32,7 @@ self.addEventListener('push', function(event) {
   const options = {
     body: data.body,
     icon: data.icon,
-    badge: '/pwa-192x192.png',
+    badge: badgeIcon,
     vibrate: [100, 50, 100],
     data: {
       url: data.url,
