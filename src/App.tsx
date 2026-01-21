@@ -11,6 +11,7 @@ import AuthModal from "@/components/AuthModal";
 import Navbar from "@/components/Navbar";
 import SplashScreen from "@/components/SplashScreen";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import NotificationPrompt from "@/components/NotificationPrompt";
 import Index from "./pages/Index";
 import Subject from "./pages/Subject";
 import Chapter from "./pages/Chapter";
@@ -48,6 +49,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <PWAInstallPrompt />
+            <NotificationPrompt />
             {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
             <BrowserRouter>
               <AuthModal />
