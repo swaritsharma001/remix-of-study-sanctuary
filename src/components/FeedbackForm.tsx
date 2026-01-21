@@ -54,6 +54,22 @@ const FeedbackForm: React.FC = () => {
 
       if (error) throw error;
 
+      // Send email notification (don't block on this)
+      supabase.functions.invoke('send-feedback-notification', {
+        body: {
+          name: formData.name.trim(),
+          email: formData.email.trim() || null,
+          message: formData.message.trim(),
+          rating,
+        },
+      }).then(({ error: emailError }) => {
+        if (emailError) {
+          console.log('Email notification failed (non-critical):', emailError);
+        } else {
+          console.log('Feedback email notification sent');
+        }
+      });
+
       setIsSubmitted(true);
       toast({
         title: 'Thank you! 🎉',
