@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useLectures } from '@/hooks/useLectures';
+import { useSubscriptionStats } from '@/hooks/useSubscriptionStats';
 import { 
   addSubject, 
   addLecture, 
@@ -21,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone, ImagePlus, X } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone, ImagePlus, X, RefreshCw, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,6 +33,7 @@ const Admin = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: subjects, isLoading: subjectsLoading } = useSubjects();
+  const { data: subscriptionStats, isLoading: statsLoading, refetch: refetchStats } = useSubscriptionStats();
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, subscribe: pushSubscribe } = usePushNotifications();
   
   // Admin auth state
@@ -853,6 +855,118 @@ const Admin = () => {
 
           {/* Notifications Tab */}
           <TabsContent value="notifications">
+            {/* Subscription Analytics */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Subscription Analytics
+                </h3>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => refetchStats()}
+                  disabled={statsLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-1 ${statsLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+              
+              {statsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : subscriptionStats ? (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Total Active</p>
+                            <p className="text-2xl font-bold text-foreground">{subscriptionStats.total}</p>
+                          </div>
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Bell className="h-5 w-5 text-primary" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Last 24h</p>
+                            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{subscriptionStats.last24h}</p>
+                          </div>
+                          <div className="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <Users className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Last 7 Days</p>
+                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{subscriptionStats.last7d}</p>
+                          </div>
+                          <div className="h-10 w-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-gradient-to-br from-violet-500/10 to-violet-500/5 border-violet-500/20">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Last 30 Days</p>
+                            <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">{subscriptionStats.last30d}</p>
+                          </div>
+                          <div className="h-10 w-10 rounded-full bg-violet-500/20 flex items-center justify-center">
+                            <Shield className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  {/* Browser Breakdown */}
+                  {subscriptionStats.byBrowser && subscriptionStats.byBrowser.length > 0 && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          Subscribers by Browser
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-2">
+                          {subscriptionStats.byBrowser.map(({ browser, count }) => (
+                            <Badge 
+                              key={browser} 
+                              variant="secondary"
+                              className="text-sm py-1 px-3"
+                            >
+                              {browser}: {count}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              ) : (
+                <p className="text-center text-muted-foreground py-4">Failed to load stats</p>
+              )}
+            </div>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
