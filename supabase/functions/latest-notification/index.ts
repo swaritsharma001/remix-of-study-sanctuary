@@ -19,7 +19,7 @@ serve(async (req) => {
 
     const { data, error } = await supabase
       .from("latest_notification")
-      .select("title, body, icon, url")
+      .select("title, body, icon, url, image")
       .eq("id", 1)
       .maybeSingle();
 

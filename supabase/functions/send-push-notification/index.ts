@@ -90,7 +90,7 @@ serve(async (req) => {
   }
 
   try {
-    const { title, body, icon, url, endpoint }: ReqBody = await req.json();
+    const { title, body, icon, url, image, endpoint }: ReqBody = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -109,6 +109,7 @@ serve(async (req) => {
       body: body || "New content available",
       icon: icon || "/notification-icon.png",
       url: url || "/",
+      image: image || null,
       updated_at: new Date().toISOString(),
     };
 

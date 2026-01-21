@@ -19,6 +19,7 @@ export type Database = {
           body: string
           icon: string | null
           id: number
+          image: string | null
           title: string
           updated_at: string
           url: string | null
@@ -27,6 +28,7 @@ export type Database = {
           body?: string
           icon?: string | null
           id?: number
+          image?: string | null
           title?: string
           updated_at?: string
           url?: string | null
@@ -35,6 +37,7 @@ export type Database = {
           body?: string
           icon?: string | null
           id?: number
+          image?: string | null
           title?: string
           updated_at?: string
           url?: string | null
