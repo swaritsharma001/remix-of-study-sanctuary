@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone, ImagePlus, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -65,6 +65,9 @@ const Admin = () => {
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationBody, setNotificationBody] = useState('');
   const [notificationUrl, setNotificationUrl] = useState('/');
+  const [notificationImage, setNotificationImage] = useState<File | null>(null);
+  const [notificationImagePreview, setNotificationImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [sendingNotification, setSendingNotification] = useState(false);
   const [sendingTestPush, setSendingTestPush] = useState(false);
   
@@ -230,6 +233,53 @@ const Admin = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: 'Error', description: 'Image must be less than 5MB', variant: 'destructive' });
+        return;
+      }
+      setNotificationImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNotificationImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearNotificationImage = () => {
+    setNotificationImage(null);
+    setNotificationImagePreview(null);
+  };
+
+  const uploadNotificationImage = async (): Promise<string | null> => {
+    if (!notificationImage) return null;
+    
+    setUploadingImage(true);
+    try {
+      const fileName = `notification-${Date.now()}-${notificationImage.name}`;
+      const { data, error } = await supabase.storage
+        .from('notification-images')
+        .upload(fileName, notificationImage);
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from('notification-images')
+        .getPublicUrl(data.path);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast({ title: 'Error', description: 'Failed to upload image', variant: 'destructive' });
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSendNotification = async () => {
     if (!notificationTitle.trim() || !notificationBody.trim()) {
       toast({ title: 'Error', description: 'Please fill title and message', variant: 'destructive' });
@@ -238,11 +288,18 @@ const Admin = () => {
     
     setSendingNotification(true);
     try {
+      // Upload image if present
+      let imageUrl = null;
+      if (notificationImage) {
+        imageUrl = await uploadNotificationImage();
+      }
+
       const { data, error } = await supabase.functions.invoke('send-push-notification', {
         body: {
           title: notificationTitle,
           body: notificationBody,
           url: notificationUrl || '/',
+          image: imageUrl,
         },
       });
 
@@ -255,6 +312,7 @@ const Admin = () => {
       setNotificationTitle('');
       setNotificationBody('');
       setNotificationUrl('/');
+      clearNotificationImage();
     } catch (error) {
       console.error('Send notification error:', error);
       toast({ title: 'Error', description: 'Failed to send notification', variant: 'destructive' });
@@ -832,6 +890,43 @@ const Admin = () => {
                   />
                   <p className="text-xs text-muted-foreground mt-1">
                     Where should the notification take users when clicked?
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Image (optional)</label>
+                  {notificationImagePreview ? (
+                    <div className="relative inline-block">
+                      <img 
+                        src={notificationImagePreview} 
+                        alt="Notification preview" 
+                        className="w-full max-w-xs h-auto rounded-lg border"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8"
+                        onClick={clearNotificationImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <ImagePlus className="w-8 h-8 mb-2 text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">Click to upload image</p>
+                        <p className="text-xs text-muted-foreground">PNG, JPG up to 5MB</p>
+                      </div>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                      />
+                    </label>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Large image shown in expanded notification (Android)
                   </p>
                 </div>
                 <div className="flex gap-2">
