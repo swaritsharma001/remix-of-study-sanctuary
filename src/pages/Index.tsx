@@ -6,6 +6,7 @@ import { useSubjects } from '@/hooks/useSubjects';
 import Footer from '@/components/Footer';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import BannerCarousel from '@/components/BannerCarousel';
+import FeedbackForm from '@/components/FeedbackForm';
 import logo from '@/assets/logo.png';
 
 // Icon mapping for subjects
@@ -195,6 +196,16 @@ const Index: React.FC = () => {
               <p className="mt-4 text-muted-foreground">No subjects available yet.</p>
             </motion.div>
           )}
+
+          {/* Feedback Form - Highlighted Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="mx-auto mt-16 max-w-xl"
+          >
+            <FeedbackForm />
+          </motion.div>
         </div>
       </div>
 
