@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      latest_notification: {
+        Row: {
+          body: string
+          icon: string | null
+          id: number
+          title: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          body?: string
+          icon?: string | null
+          id?: number
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          body?: string
+          icon?: string | null
+          id?: number
+          title?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string

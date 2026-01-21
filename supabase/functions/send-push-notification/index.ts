@@ -102,9 +102,31 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Save the notification content to database for service worker to fetch
+    const notificationData = {
+      title: title || "StudyX",
+      body: body || "New content available",
+      icon: icon || "/notification-icon.png",
+      url: url || "/",
+      updated_at: new Date().toISOString(),
+    };
+
+    console.log("[PUSH] Saving notification to database:", notificationData);
+
+    const { error: upsertError } = await supabase
+      .from("latest_notification")
+      .upsert({ id: 1, ...notificationData });
+
+    if (upsertError) {
+      console.error("Error saving notification:", upsertError);
+      // Continue anyway - service worker will use fallback
+    } else {
+      console.log("[PUSH] ✅ Notification saved to database");
+    }
+
     // NOTE: Lovable Cloud edge runtime does not support WebCrypto ECDH,
     // so payload encryption (RFC8291) isn't available. We send an *empty* push.
-    // The service worker will still fire the `push` event and show its default UI.
+    // The service worker will still fire the `push` event and fetch the saved message.
 
     const baseQuery = supabase
       .from("push_subscriptions")

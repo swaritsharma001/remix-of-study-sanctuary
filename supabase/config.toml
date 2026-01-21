@@ -1,1 +1,4 @@
 project_id = "pwdjpguxipapoelnnjnl"
+
+[functions.latest-notification]
+verify_jwt = false

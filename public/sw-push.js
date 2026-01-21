@@ -5,19 +5,35 @@ self.addEventListener('push', function(event) {
   console.log('[Service Worker] Push received');
 
   event.waitUntil((async () => {
+    const origin = self.location.origin;
+    
+    // Get the Supabase URL from the origin (production) or use the project URL
+    const supabaseProjectId = 'pwdjpguxipapoelnnjnl';
+    const supabaseUrl = `https://${supabaseProjectId}.supabase.co`;
+    
     try {
-      // API se latest notification lao
-      const res = await fetch('/api/latest-notification');
+      // Fetch latest notification from edge function
+      console.log('[Service Worker] Fetching notification from edge function...');
+      const res = await fetch(`${supabaseUrl}/functions/v1/latest-notification`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      
       const data = await res.json();
-
-      const origin = self.location.origin;
+      console.log('[Service Worker] Got notification data:', data);
 
       await self.registration.showNotification(
         data.title || 'StudyX',
         {
           body: data.body || 'New update available',
-          icon: origin + (data.icon || '/favicon.png'),
-          badge: origin + '/pwa-192x192.png',
+          icon: origin + '/notification-icon.png',
+          badge: origin + '/notification-icon.png',
           vibrate: [100, 50, 100],
           data: {
             url: data.url || '/',
@@ -29,13 +45,15 @@ self.addEventListener('push', function(event) {
           ],
         }
       );
+      console.log('[Service Worker] ✅ Notification shown successfully');
     } catch (err) {
       console.error('[Service Worker] Push error:', err);
 
-      // Fallback agar API fail ho jaye
+      // Fallback if API fails
       await self.registration.showNotification('StudyX', {
         body: 'New content available',
-        icon: self.location.origin + '/favicon.png',
+        icon: origin + '/notification-icon.png',
+        badge: origin + '/notification-icon.png',
       });
     }
   })());
