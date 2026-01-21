@@ -44,7 +44,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "StudyX <onboarding@resend.dev>",
+        from: "StudyX <noreply@mintgram.live>",
         to: [userEmail],
         subject: `Re: Your Feedback to StudyX`,
         html: `
