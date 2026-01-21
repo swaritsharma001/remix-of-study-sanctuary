@@ -11,6 +11,7 @@ type ReqBody = {
   body?: string;
   icon?: string;
   url?: string;
+  image?: string;
   endpoint?: string;
 };
 
