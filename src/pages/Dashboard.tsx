@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
@@ -9,14 +9,17 @@ import {
   TrendingUp,
   Calendar,
   ArrowRight,
-  BookOpen
+  BookOpen,
+  BarChart3
 } from 'lucide-react';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import { useSubjects } from '@/hooks/useSubjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import NotificationSettings from '@/components/NotificationSettings';
+import ProgressDashboard from '@/components/ProgressDashboard';
 import Footer from '@/components/Footer';
 
 const Dashboard: React.FC = () => {
@@ -93,11 +96,26 @@ const Dashboard: React.FC = () => {
             Track your learning progress and pick up where you left off
           </p>
           
-          {/* Notification Settings */}
-          <div className="mt-6">
-            <NotificationSettings />
-          </div>
         </motion.div>
+
+        {/* Tabs for different views */}
+        <Tabs defaultValue="overview" className="mt-6">
+          <TabsList className="mb-6">
+            <TabsTrigger value="overview" className="gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview">
+            {/* Notification Settings */}
+            <div className="mb-8">
+              <NotificationSettings />
+            </div>
 
         {/* Stats Grid */}
         <motion.div
@@ -297,6 +315,12 @@ const Dashboard: React.FC = () => {
             </Card>
           </motion.div>
         )}
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <ProgressDashboard />
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Footer />

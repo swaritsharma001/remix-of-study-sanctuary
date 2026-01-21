@@ -1,14 +1,14 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Loader2 } from 'lucide-react';
 import VideoPlayer from '@/components/VideoPlayer';
 import YouTubePlayer from '@/components/YouTubePlayer';
+import LectureNotes from '@/components/LectureNotes';
 import { Button } from '@/components/ui/button';
 import { useLectures } from '@/hooks/useLectures';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
-
 // Convert seconds to MM:SS format
 const formatDuration = (seconds: string | number): string => {
   const totalSeconds = typeof seconds === 'string' ? parseInt(seconds, 10) : seconds;
@@ -33,6 +33,8 @@ const Lecture: React.FC = () => {
   }>();
   
   const { saveProgress } = useWatchProgress();
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  const videoSeekRef = useRef<(time: number) => void>();
   
   const { data: subjects } = useSubjects();
   const { data: lectures, isLoading, error } = useLectures(slug);
@@ -43,10 +45,16 @@ const Lecture: React.FC = () => {
   
   // Handle progress updates from video player
   const handleProgressUpdate = useCallback((currentTime: number, duration: number) => {
+    setCurrentVideoTime(currentTime);
     if (lectureId) {
       saveProgress(lectureId, currentTime, duration);
     }
   }, [lectureId, saveProgress]);
+
+  // Handle seek to timestamp from notes
+  const handleSeekTo = useCallback((time: number) => {
+    videoSeekRef.current?.(time);
+  }, []);
 
   // Get prev/next lectures
   const prevLecture = lectureIndex > 0 ? lectures?.[lectureIndex - 1] : null;
@@ -161,6 +169,22 @@ const Lecture: React.FC = () => {
             )}
           </div>
         </motion.div>
+
+        {/* Notes Section */}
+        {lectureId && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mx-auto max-w-4xl"
+          >
+            <LectureNotes 
+              lectureId={lectureId} 
+              currentTime={currentVideoTime}
+              onSeekTo={handleSeekTo}
+            />
+          </motion.div>
+        )}
       </div>
     </div>
   );

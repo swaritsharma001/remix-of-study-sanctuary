@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, BookOpen, Play, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getSubject, getChapter } from '@/data/courseData';
-
+import QuizCard from '@/components/QuizCard';
 const Chapter: React.FC = () => {
   const { slug, chapterId } = useParams<{ slug: string; chapterId: string }>();
   const subject = getSubject(slug || '');
@@ -111,6 +111,16 @@ const Chapter: React.FC = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Quiz Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mx-auto max-w-2xl"
+        >
+          <QuizCard chapterId={chapterId || ''} subjectSlug={slug || ''} />
+        </motion.div>
       </div>
     </div>
   );

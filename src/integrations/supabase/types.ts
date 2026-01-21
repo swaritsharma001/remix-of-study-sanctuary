@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      lecture_notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          lecture_id: string
+          timestamp_seconds: number | null
+          updated_at: string | null
+          user_token: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          lecture_id: string
+          timestamp_seconds?: number | null
+          updated_at?: string | null
+          user_token: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          lecture_id?: string
+          timestamp_seconds?: number | null
+          updated_at?: string | null
+          user_token?: string
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
@@ -68,6 +98,235 @@ export type Database = {
           id?: string
           p256dh?: string
           user_agent?: string | null
+        }
+        Relationships: []
+      }
+      quiz_answers: {
+        Row: {
+          attempt_id: string
+          created_at: string | null
+          id: string
+          is_correct: boolean
+          question_id: string
+          selected_option: string
+        }
+        Insert: {
+          attempt_id: string
+          created_at?: string | null
+          id?: string
+          is_correct: boolean
+          question_id: string
+          selected_option: string
+        }
+        Update: {
+          attempt_id?: string
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean
+          question_id?: string
+          selected_option?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_answers_attempt_id_fkey"
+            columns: ["attempt_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_attempts: {
+        Row: {
+          completed_at: string | null
+          correct_answers: number
+          id: string
+          quiz_id: string
+          score: number
+          time_taken_seconds: number | null
+          total_questions: number
+          user_token: string
+        }
+        Insert: {
+          completed_at?: string | null
+          correct_answers?: number
+          id?: string
+          quiz_id: string
+          score?: number
+          time_taken_seconds?: number | null
+          total_questions: number
+          user_token: string
+        }
+        Update: {
+          completed_at?: string | null
+          correct_answers?: number
+          id?: string
+          quiz_id?: string
+          score?: number
+          time_taken_seconds?: number | null
+          total_questions?: number
+          user_token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_option: string
+          created_at: string | null
+          explanation: string | null
+          id: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          order_index: number | null
+          question: string
+          quiz_id: string
+        }
+        Insert: {
+          correct_option: string
+          created_at?: string | null
+          explanation?: string | null
+          id?: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          order_index?: number | null
+          question: string
+          quiz_id: string
+        }
+        Update: {
+          correct_option?: string
+          created_at?: string | null
+          explanation?: string | null
+          id?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          order_index?: number | null
+          question?: string
+          quiz_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          chapter_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          passing_score: number | null
+          subject_slug: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          chapter_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          passing_score?: number | null
+          subject_slug: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          chapter_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          passing_score?: number | null
+          subject_slug?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      study_sessions: {
+        Row: {
+          chapter_id: string | null
+          created_at: string | null
+          duration_seconds: number
+          id: string
+          lecture_id: string | null
+          session_date: string | null
+          subject_slug: string
+          user_token: string
+        }
+        Insert: {
+          chapter_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number
+          id?: string
+          lecture_id?: string | null
+          session_date?: string | null
+          subject_slug: string
+          user_token: string
+        }
+        Update: {
+          chapter_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number
+          id?: string
+          lecture_id?: string | null
+          session_date?: string | null
+          subject_slug?: string
+          user_token?: string
+        }
+        Relationships: []
+      }
+      watch_progress: {
+        Row: {
+          completed: boolean | null
+          duration_seconds: number
+          id: string
+          last_watched_at: string | null
+          lecture_id: string
+          progress_seconds: number
+          user_token: string
+        }
+        Insert: {
+          completed?: boolean | null
+          duration_seconds?: number
+          id?: string
+          last_watched_at?: string | null
+          lecture_id: string
+          progress_seconds?: number
+          user_token: string
+        }
+        Update: {
+          completed?: boolean | null
+          duration_seconds?: number
+          id?: string
+          last_watched_at?: string | null
+          lecture_id?: string
+          progress_seconds?: number
+          user_token?: string
         }
         Relationships: []
       }
