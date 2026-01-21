@@ -1,32 +1,43 @@
 // Service Worker for Push Notifications (StudyX)
+// Version: 2.0.0 - Force update
+
+// Force immediate activation
+self.addEventListener('install', function(event) {
+  console.log('[Service Worker] Installing v2.0.0...');
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', function(event) {
+  console.log('[Service Worker] Activating v2.0.0...');
+  event.waitUntil(clients.claim());
+});
 
 // Handle push events
 self.addEventListener('push', function(event) {
-  console.log('[Service Worker] Push received');
+  console.log('[Service Worker v2] Push received');
 
   event.waitUntil((async () => {
     const origin = self.location.origin;
-    
-    // Get the Supabase URL from the origin (production) or use the project URL
-    const supabaseProjectId = 'pwdjpguxipapoelnnjnl';
-    const supabaseUrl = `https://${supabaseProjectId}.supabase.co`;
+    const supabaseUrl = 'https://pwdjpguxipapoelnnjnl.supabase.co';
     
     try {
-      // Fetch latest notification from edge function
-      console.log('[Service Worker] Fetching notification from edge function...');
-      const res = await fetch(`${supabaseUrl}/functions/v1/latest-notification`, {
+      console.log('[Service Worker v2] Fetching from:', supabaseUrl + '/functions/v1/latest-notification');
+      
+      const res = await fetch(supabaseUrl + '/functions/v1/latest-notification', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       });
       
+      console.log('[Service Worker v2] Response status:', res.status);
+      
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        throw new Error('HTTP ' + res.status + ': ' + res.statusText);
       }
       
       const data = await res.json();
-      console.log('[Service Worker] Got notification data:', data);
+      console.log('[Service Worker v2] Got data:', JSON.stringify(data));
 
       await self.registration.showNotification(
         data.title || 'StudyX',
@@ -45,9 +56,9 @@ self.addEventListener('push', function(event) {
           ],
         }
       );
-      console.log('[Service Worker] ✅ Notification shown successfully');
+      console.log('[Service Worker v2] ✅ Notification shown with custom message');
     } catch (err) {
-      console.error('[Service Worker] Push error:', err);
+      console.error('[Service Worker v2] Error:', err.message || err);
 
       // Fallback if API fails
       await self.registration.showNotification('StudyX', {
