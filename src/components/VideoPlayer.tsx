@@ -391,14 +391,41 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, lectureId, onProg
     setIsMuted(newVolume === 0);
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = async () => {
     const container = containerRef.current;
     if (!container) return;
 
+    const orientation = screen.orientation as ScreenOrientation & {
+      lock?: (orientation: string) => Promise<void>;
+      unlock?: () => void;
+    };
+
     if (document.fullscreenElement) {
+      // Exit fullscreen and unlock orientation
+      try {
+        if (orientation?.unlock) {
+          orientation.unlock();
+        }
+      } catch (err) {
+        console.log('Orientation unlock not supported');
+      }
       document.exitFullscreen();
     } else {
-      container.requestFullscreen();
+      // Enter fullscreen and lock to landscape
+      try {
+        await container.requestFullscreen();
+        // Lock to landscape after entering fullscreen
+        if (orientation?.lock) {
+          await orientation.lock('landscape').catch(() => {
+            // Fallback: try 'landscape-primary' if 'landscape' fails
+            return orientation.lock?.('landscape-primary').catch(() => {
+              console.log('Orientation lock not supported');
+            });
+          });
+        }
+      } catch (err) {
+        console.log('Fullscreen or orientation lock error:', err);
+      }
     }
   };
 
