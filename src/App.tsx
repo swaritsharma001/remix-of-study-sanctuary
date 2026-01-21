@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar";
 import SplashScreen from "@/components/SplashScreen";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import NotificationPrompt from "@/components/NotificationPrompt";
+import ResubscribeAlert from "@/components/ResubscribeAlert";
 import Index from "./pages/Index";
 import Subject from "./pages/Subject";
 import Chapter from "./pages/Chapter";
@@ -50,6 +51,7 @@ const App = () => {
             <Sonner />
             <PWAInstallPrompt />
             <NotificationPrompt />
+            <ResubscribeAlert />
             {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
             <BrowserRouter>
               <AuthModal />
