@@ -128,6 +128,8 @@ serve(async (req) => {
 
     for (const sub of subscriptions || []) {
       try {
+        console.log(`[PUSH] Sending to endpoint: ${sub.endpoint.substring(0, 80)}...`);
+        
         const jwt = await forgeVapidJwt({
           endpoint: sub.endpoint,
           subject: "mailto:admin@studyx.app",
@@ -135,34 +137,49 @@ serve(async (req) => {
         });
 
         // IMPORTANT: Empty body => no encryption needed.
-        // Some push services still expect `Crypto-Key` and `Content-Length: 0`.
+        // FCM requires specific header format for VAPID
+        const headers: Record<string, string> = {
+          TTL: "86400",
+          Urgency: "high",
+        };
+
+        // FCM uses different auth header format than other push services
+        if (sub.endpoint.includes("fcm.googleapis.com") || sub.endpoint.includes("firebase")) {
+          // FCM format: Authorization: vapid t=<jwt>, k=<publicKey>
+          headers["Authorization"] = `vapid t=${jwt}, k=${vapidPublicKey}`;
+        } else {
+          // Standard WebPush format for other services
+          headers["Authorization"] = `WebPush ${jwt}`;
+          headers["Crypto-Key"] = `p256ecdsa=${vapidPublicKey}`;
+        }
+
+        console.log(`[PUSH] Using auth format: ${sub.endpoint.includes("fcm") ? "FCM vapid" : "WebPush"}`);
+
         const res = await fetch(sub.endpoint, {
           method: "POST",
-          headers: {
-            // Standard VAPID header format used by most push services (incl. FCM)
-            Authorization: `WebPush ${jwt}`,
-            TTL: "60",
-            Urgency: "high",
-            "Content-Length": "0",
-            "Content-Type": "application/octet-stream",
-            // Provide the VAPID public key explicitly
-            "Crypto-Key": `p256ecdsa=${vapidPublicKey}`,
-          },
+          headers,
         });
+
+        const responseText = await res.text();
+        console.log(`[PUSH] Response: ${res.status} ${res.statusText} - Body: ${responseText.substring(0, 200)}`);
 
         if (res.ok) {
           sent++;
+          console.log(`[PUSH] ✅ Successfully sent to endpoint`);
         } else {
           failed++;
-          // 404/410 => subscription is gone
+          console.error(`[PUSH] ❌ Push service rejected: ${res.status} ${res.statusText}`);
+          console.error(`[PUSH] Response headers:`, Object.fromEntries(res.headers.entries()));
+          
+          // 404/410 => subscription is gone, clean up
           if (res.status === 404 || res.status === 410) {
+            console.log(`[PUSH] Removing stale subscription`);
             await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
           }
-          console.error("Push service rejected:", res.status, await res.text());
         }
       } catch (e) {
         failed++;
-        console.error("Error sending push:", e);
+        console.error("[PUSH] Error sending push:", e);
       }
     }
 
