@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone, ImagePlus, X, RefreshCw, Globe, MessageSquare, Star } from 'lucide-react';
+import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone, ImagePlus, X, RefreshCw, Globe, MessageSquare, Star, Reply, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -34,6 +34,9 @@ interface Feedback {
   message: string;
   rating: number | null;
   created_at: string;
+  reply: string | null;
+  replied_at: string | null;
+  replied_by: string | null;
 }
 
 const ADMIN_EMAIL = 'admin@mintgram.live';
@@ -100,6 +103,11 @@ const Admin = () => {
   // View lectures state
   const [viewSubjectId, setViewSubjectId] = useState('');
   const { data: lectures, isLoading: lecturesLoading } = useLectures(viewSubjectId || undefined);
+
+  // Feedback reply state
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
   // Check admin session on mount
   useEffect(() => {
@@ -390,6 +398,57 @@ const Admin = () => {
       toast({ title: 'Error', description: 'Failed to send test push', variant: 'destructive' });
     } finally {
       setSendingTestPush(false);
+    }
+  };
+
+  const handleSendReply = async (feedback: Feedback) => {
+    if (!replyMessage.trim()) {
+      toast({ title: 'Error', description: 'Please enter a reply message', variant: 'destructive' });
+      return;
+    }
+
+    if (!feedback.email) {
+      toast({ title: 'Error', description: 'This user did not provide an email address', variant: 'destructive' });
+      return;
+    }
+
+    setSendingReply(true);
+    try {
+      // Send email reply
+      const { error: emailError } = await supabase.functions.invoke('send-feedback-reply', {
+        body: {
+          feedbackId: feedback.id,
+          userName: feedback.name,
+          userEmail: feedback.email,
+          originalMessage: feedback.message,
+          originalRating: feedback.rating || 5,
+          replyMessage: replyMessage.trim(),
+        },
+      });
+
+      if (emailError) throw emailError;
+
+      // Update feedback record with reply
+      const { error: updateError } = await supabase
+        .from('feedback')
+        .update({
+          reply: replyMessage.trim(),
+          replied_at: new Date().toISOString(),
+          replied_by: ADMIN_EMAIL,
+        })
+        .eq('id', feedback.id);
+
+      if (updateError) throw updateError;
+
+      toast({ title: 'Reply sent! ✉️', description: `Email sent to ${feedback.email}` });
+      setReplyingToId(null);
+      setReplyMessage('');
+      refetchFeedback();
+    } catch (error) {
+      console.error('Reply error:', error);
+      toast({ title: 'Error', description: 'Failed to send reply', variant: 'destructive' });
+    } finally {
+      setSendingReply(false);
     }
   };
 
@@ -921,60 +980,133 @@ const Admin = () => {
                     <p>No feedback received yet.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Rating</TableHead>
-                          <TableHead className="min-w-[300px]">Message</TableHead>
-                          <TableHead>Date</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {feedbackList.map((feedback) => (
-                          <TableRow key={feedback.id}>
-                            <TableCell className="font-medium">{feedback.name}</TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {feedback.email || '-'}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-0.5">
-                                {feedback.rating ? (
-                                  <>
-                                    {[...Array(5)].map((_, i) => (
+                  <div className="space-y-4">
+                    {feedbackList.map((feedback) => (
+                      <Card key={feedback.id} className={`${feedback.reply ? 'border-primary/30 bg-primary/5' : ''}`}>
+                        <CardContent className="pt-4">
+                          <div className="flex flex-col gap-4">
+                            {/* Header row */}
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <span className="font-semibold text-foreground">{feedback.name}</span>
+                                  {feedback.email && (
+                                    <span className="text-sm text-muted-foreground">{feedback.email}</span>
+                                  )}
+                                  <div className="flex items-center gap-0.5">
+                                    {feedback.rating && [...Array(5)].map((_, i) => (
                                       <Star
                                         key={i}
-                                        className={`h-4 w-4 ${
+                                        className={`h-3.5 w-3.5 ${
                                           i < feedback.rating!
                                             ? 'fill-yellow-400 text-yellow-400'
                                             : 'text-muted-foreground/30'
                                         }`}
                                       />
                                     ))}
-                                  </>
-                                ) : (
-                                  <span className="text-muted-foreground">-</span>
-                                )}
+                                  </div>
+                                  {feedback.reply && (
+                                    <Badge variant="secondary" className="bg-primary/10 text-primary">
+                                      <Check className="h-3 w-3 mr-1" />
+                                      Replied
+                                    </Badge>
+                                  )}
+                                </div>
+                                <p className="text-muted-foreground text-sm mb-2">
+                                  {new Date(feedback.created_at).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </p>
                               </div>
-                            </TableCell>
-                            <TableCell className="max-w-[400px]">
-                              <p className="line-clamp-3">{feedback.message}</p>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground whitespace-nowrap">
-                              {new Date(feedback.created_at).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                              {feedback.email && !feedback.reply && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setReplyingToId(replyingToId === feedback.id ? null : feedback.id);
+                                    setReplyMessage('');
+                                  }}
+                                  className="shrink-0"
+                                >
+                                  <Reply className="h-4 w-4 mr-1" />
+                                  Reply
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* Message */}
+                            <div className="bg-muted/50 rounded-lg p-3">
+                              <p className="whitespace-pre-wrap">{feedback.message}</p>
+                            </div>
+
+                            {/* Existing reply */}
+                            {feedback.reply && (
+                              <div className="bg-primary/10 border-l-4 border-primary rounded-lg p-3">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Mail className="h-4 w-4 text-primary" />
+                                  <span className="text-sm font-medium text-primary">Your Reply</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {feedback.replied_at && new Date(feedback.replied_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                                <p className="whitespace-pre-wrap text-sm">{feedback.reply}</p>
+                              </div>
+                            )}
+
+                            {/* Reply form */}
+                            <AnimatePresence>
+                              {replyingToId === feedback.id && (
+                                <motion.div
+                                  initial={{ opacity: 0, height: 0 }}
+                                  animate={{ opacity: 1, height: 'auto' }}
+                                  exit={{ opacity: 0, height: 0 }}
+                                  className="space-y-3 overflow-hidden"
+                                >
+                                  <Textarea
+                                    placeholder={`Write your reply to ${feedback.name}...`}
+                                    value={replyMessage}
+                                    onChange={(e) => setReplyMessage(e.target.value)}
+                                    className="min-h-[100px]"
+                                  />
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      onClick={() => handleSendReply(feedback)}
+                                      disabled={sendingReply || !replyMessage.trim()}
+                                      className="gap-2"
+                                    >
+                                      {sendingReply ? (
+                                        <>
+                                          <Loader2 className="h-4 w-4 animate-spin" />
+                                          Sending...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Send className="h-4 w-4" />
+                                          Send Reply to {feedback.email}
+                                        </>
+                                      )}
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      onClick={() => {
+                                        setReplyingToId(null);
+                                        setReplyMessage('');
+                                      }}
+                                    >
+                                      Cancel
+                                    </Button>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </CardContent>

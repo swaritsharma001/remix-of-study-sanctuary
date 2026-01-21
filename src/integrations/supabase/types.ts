@@ -22,6 +22,9 @@ export type Database = {
           message: string
           name: string
           rating: number | null
+          replied_at: string | null
+          replied_by: string | null
+          reply: string | null
         }
         Insert: {
           created_at?: string
@@ -30,6 +33,9 @@ export type Database = {
           message: string
           name: string
           rating?: number | null
+          replied_at?: string | null
+          replied_by?: string | null
+          reply?: string | null
         }
         Update: {
           created_at?: string
@@ -38,6 +44,9 @@ export type Database = {
           message?: string
           name?: string
           rating?: number | null
+          replied_at?: string | null
+          replied_by?: string | null
+          reply?: string | null
         }
         Relationships: []
       }
