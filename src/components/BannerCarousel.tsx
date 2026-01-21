@@ -1,11 +1,22 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles, GraduationCap } from 'lucide-react';
 import banner1 from '@/assets/banner-1.jpg';
 import banner2 from '@/assets/banner-2.jpg';
 import banner3 from '@/assets/banner-3.jpg';
 
-const banners = [
+interface Banner {
+  id: number;
+  image?: string;
+  title: string;
+  subtitle: string;
+  cta?: string;
+  isAnnouncement?: boolean;
+  gradient?: string;
+  icon?: 'sparkles' | 'graduation';
+}
+
+const banners: Banner[] = [
   {
     id: 1,
     image: banner1,
@@ -26,6 +37,22 @@ const banners = [
     title: 'All Subjects Available',
     subtitle: 'Hindi, English, Maths, Science & more',
     cta: 'Browse Subjects',
+  },
+  {
+    id: 4,
+    title: 'Class 9 Batch',
+    subtitle: 'Coming Soon!',
+    isAnnouncement: true,
+    gradient: 'from-primary via-primary/80 to-secondary',
+    icon: 'sparkles',
+  },
+  {
+    id: 5,
+    title: 'We Offer Only 2 Class Batches',
+    subtitle: 'Class 9 & Class 10',
+    isAnnouncement: true,
+    gradient: 'from-secondary via-secondary/80 to-primary',
+    icon: 'graduation',
   },
 ];
 
@@ -64,12 +91,44 @@ const BannerCarousel = () => {
             transition={{ duration: 0.5 }}
             className="absolute inset-0"
           >
-            {/* Background image */}
-            <img
-              src={banners[currentIndex].image}
-              alt={banners[currentIndex].title}
-              className="w-full h-full object-cover"
-            />
+            {banners[currentIndex].isAnnouncement ? (
+              <div className={`w-full h-full bg-gradient-to-br ${banners[currentIndex].gradient} flex flex-col items-center justify-center text-white p-6`}>
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: 'spring', damping: 12 }}
+                  className="mb-4"
+                >
+                  {banners[currentIndex].icon === 'sparkles' ? (
+                    <Sparkles className="w-12 h-12 md:w-16 md:h-16 text-white/90" />
+                  ) : (
+                    <GraduationCap className="w-12 h-12 md:w-16 md:h-16 text-white/90" />
+                  )}
+                </motion.div>
+                <motion.h2
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="text-2xl md:text-4xl lg:text-5xl font-bold text-center mb-2"
+                >
+                  {banners[currentIndex].title}
+                </motion.h2>
+                <motion.p
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="text-lg md:text-2xl lg:text-3xl font-medium text-white/90 text-center"
+                >
+                  {banners[currentIndex].subtitle}
+                </motion.p>
+              </div>
+            ) : (
+              <img
+                src={banners[currentIndex].image}
+                alt={banners[currentIndex].title}
+                className="w-full h-full object-cover"
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
