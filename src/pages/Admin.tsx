@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useSubjects } from '@/hooks/useSubjects';
 import { useLectures } from '@/hooks/useLectures';
 import { useSubscriptionStats } from '@/hooks/useSubscriptionStats';
@@ -18,13 +18,23 @@ import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone, ImagePlus, X, RefreshCw, Globe } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, KeyRound, Shield, BarChart3, Bell, Send, Smartphone, ImagePlus, X, RefreshCw, Globe, MessageSquare, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+
+interface Feedback {
+  id: string;
+  name: string;
+  email: string | null;
+  message: string;
+  rating: number | null;
+  created_at: string;
+}
 
 const ADMIN_EMAIL = 'admin@mintgram.live';
 const ADMIN_PASSWORD = 'admin@mintgram.live';
@@ -35,6 +45,20 @@ const Admin = () => {
   const { data: subjects, isLoading: subjectsLoading } = useSubjects();
   const { data: subscriptionStats, isLoading: statsLoading, refetch: refetchStats } = useSubscriptionStats();
   const { isSupported: pushSupported, isSubscribed: pushSubscribed, subscribe: pushSubscribe } = usePushNotifications();
+  
+  // Feedback query
+  const { data: feedbackList, isLoading: feedbackLoading, refetch: refetchFeedback } = useQuery({
+    queryKey: ['admin-feedback'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('feedback')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as Feedback[];
+    },
+    enabled: false, // Only fetch when admin is logged in
+  });
   
   // Admin auth state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -85,10 +109,11 @@ const Admin = () => {
     }
   }, []);
 
-  // Load keys when admin logs in
+  // Load keys and feedback when admin logs in
   useEffect(() => {
     if (isAdminLoggedIn) {
       loadKeys();
+      refetchFeedback();
     }
   }, [isAdminLoggedIn]);
 
@@ -424,10 +449,14 @@ const Admin = () => {
         </div>
         
         <Tabs defaultValue="keys" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-6 mb-8">
             <TabsTrigger value="keys">Keys</TabsTrigger>
             <TabsTrigger value="subjects">Subjects</TabsTrigger>
             <TabsTrigger value="lectures">Lectures</TabsTrigger>
+            <TabsTrigger value="feedback">
+              <MessageSquare className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Feedback</span>
+            </TabsTrigger>
             <TabsTrigger value="notifications">
               <Bell className="h-4 w-4 sm:mr-1" />
               <span className="hidden sm:inline">Notify</span>
@@ -847,6 +876,105 @@ const Admin = () => {
                         No lectures found for this subject
                       </p>
                     )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Feedback Tab */}
+          <TabsContent value="feedback">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      User Feedback
+                    </CardTitle>
+                    <CardDescription>
+                      View all feedback submitted by users ({feedbackList?.length || 0} total)
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => refetchFeedback()}
+                    disabled={feedbackLoading}
+                  >
+                    {feedbackLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {feedbackLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                ) : !feedbackList || feedbackList.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>No feedback received yet.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Rating</TableHead>
+                          <TableHead className="min-w-[300px]">Message</TableHead>
+                          <TableHead>Date</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {feedbackList.map((feedback) => (
+                          <TableRow key={feedback.id}>
+                            <TableCell className="font-medium">{feedback.name}</TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {feedback.email || '-'}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-0.5">
+                                {feedback.rating ? (
+                                  <>
+                                    {[...Array(5)].map((_, i) => (
+                                      <Star
+                                        key={i}
+                                        className={`h-4 w-4 ${
+                                          i < feedback.rating!
+                                            ? 'fill-yellow-400 text-yellow-400'
+                                            : 'text-muted-foreground/30'
+                                        }`}
+                                      />
+                                    ))}
+                                  </>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="max-w-[400px]">
+                              <p className="line-clamp-3">{feedback.message}</p>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground whitespace-nowrap">
+                              {new Date(feedback.created_at).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 )}
               </CardContent>
