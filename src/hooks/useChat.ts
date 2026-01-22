@@ -195,6 +195,25 @@ export const useChat = () => {
     }
   }, [token, getUserName, reactions, fetchReactions]);
 
+  // Delete a message (admin only - check done in UI)
+  const deleteMessage = useCallback(async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_messages' as any)
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+      
+      // Optimistically update state
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      return true;
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      return false;
+    }
+  }, []);
+
   // Start typing indicator
   const startTyping = useCallback(() => {
     if (!token || !typingChannelRef.current) return;
@@ -242,17 +261,21 @@ export const useChat = () => {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'chat_messages',
         },
         (payload) => {
-          const newMessage = payload.new as ChatMessage;
-          setMessages((prev) => {
-            // Avoid duplicates
-            if (prev.find(m => m.id === newMessage.id)) return prev;
-            return [...prev, newMessage];
-          });
+          if (payload.eventType === 'INSERT') {
+            const newMessage = payload.new as ChatMessage;
+            setMessages((prev) => {
+              // Avoid duplicates
+              if (prev.find(m => m.id === newMessage.id)) return prev;
+              return [...prev, newMessage];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            setMessages((prev) => prev.filter(m => m.id !== (payload.old as any).id));
+          }
         }
       )
       .subscribe();
@@ -368,6 +391,7 @@ export const useChat = () => {
     uploadImage,
     isUploading,
     addReaction,
+    deleteMessage,
     getMessageReactions,
     getMessageById,
     typingUsers,

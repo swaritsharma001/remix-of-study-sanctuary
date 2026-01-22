@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X, Loader2, User, Smile, Users, Circle, Image, Reply, CornerDownRight } from 'lucide-react';
+import { MessageCircle, Send, X, Loader2, User, Smile, Users, Circle, Image, Reply, CornerDownRight, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useChat, ChatMessage } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 const EMOJI_LIST = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🎉'];
 
@@ -26,6 +27,7 @@ const GlobalChat: React.FC = () => {
     uploadImage,
     isUploading,
     addReaction, 
+    deleteMessage,
     getMessageReactions,
     getMessageById,
     typingUsers,
@@ -35,6 +37,7 @@ const GlobalChat: React.FC = () => {
     currentUserToken 
   } = useChat();
   const { isAuthenticated } = useAuth();
+  const isAdmin = localStorage.getItem('adminLoggedIn') === 'true';
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +128,18 @@ const GlobalChat: React.FC = () => {
 
   const cancelReply = () => {
     setReplyingTo(null);
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    const confirmed = window.confirm('Are you sure you want to delete this message?');
+    if (confirmed) {
+      const success = await deleteMessage(messageId);
+      if (success) {
+        toast.success('Message deleted');
+      } else {
+        toast.error('Failed to delete message');
+      }
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -360,7 +375,7 @@ const GlobalChat: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Message actions (reaction + reply) */}
+                          {/* Message actions (reaction + reply + delete) */}
                           {isAuthenticated && (
                             <div className="absolute -right-2 top-0 hidden flex-row gap-1 group-hover:flex">
                               {/* Reply button */}
@@ -393,6 +408,17 @@ const GlobalChat: React.FC = () => {
                                   </div>
                                 </PopoverContent>
                               </Popover>
+                              
+                              {/* Delete button (admin only) */}
+                              {isAdmin && (
+                                <button 
+                                  onClick={() => handleDeleteMessage(msg.id)}
+                                  className="rounded-full bg-destructive/10 p-1 shadow-md transition-all hover:bg-destructive/20"
+                                  title="Delete message"
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </button>
+                              )}
                             </div>
                           )}
                         </div>
