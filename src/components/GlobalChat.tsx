@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X, Loader2, User, Smile, Users, Circle } from 'lucide-react';
+import { MessageCircle, Send, X, Loader2, User, Smile, Users, Circle, Image, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -16,10 +16,14 @@ const GlobalChat: React.FC = () => {
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { 
     messages, 
     isLoading, 
     sendMessage, 
+    uploadImage,
+    isUploading,
     addReaction, 
     getMessageReactions,
     typingUsers,
@@ -31,29 +35,82 @@ const GlobalChat: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when messages load or new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const scrollElement = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
     }
-  }, [messages, typingUsers]);
+  }, [messages, typingUsers, isLoading]);
 
-  // Focus input when chat opens
+  // Scroll to bottom when chat opens
   useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
+    if (isOpen) {
+      // Small delay to ensure messages are rendered
+      setTimeout(() => {
+        if (scrollRef.current) {
+          const scrollElement = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+          if (scrollElement) {
+            scrollElement.scrollTop = scrollElement.scrollHeight;
+          }
+        }
+      }, 100);
+      
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
     }
   }, [isOpen]);
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const clearImageSelection = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleSend = async () => {
-    if (!messageInput.trim() || isSending) return;
+    if ((!messageInput.trim() && !selectedImage) || isSending) return;
 
     setIsSending(true);
     stopTyping();
-    const success = await sendMessage(messageInput);
+    
+    let imageUrl: string | null = null;
+    
+    // Upload image if selected
+    if (selectedImage) {
+      imageUrl = await uploadImage(selectedImage);
+      if (!imageUrl && !messageInput.trim()) {
+        setIsSending(false);
+        return;
+      }
+    }
+    
+    const success = await sendMessage(messageInput, imageUrl || undefined);
     if (success) {
       setMessageInput('');
+      clearImageSelection();
     }
     setIsSending(false);
   };
@@ -227,7 +284,26 @@ const GlobalChat: React.FC = () => {
                                 {msg.user_name}
                               </div>
                             )}
-                            <p className="break-words text-sm">{msg.message}</p>
+                            
+                            {/* Image */}
+                            {msg.image_url && (
+                              <a 
+                                href={msg.image_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="block mb-2"
+                              >
+                                <img 
+                                  src={msg.image_url} 
+                                  alt="Shared image" 
+                                  className="rounded-lg max-w-full max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                />
+                              </a>
+                            )}
+                            
+                            {msg.message && (
+                              <p className="break-words text-sm">{msg.message}</p>
+                            )}
                             <p
                               className={`mt-1 text-right text-[10px] ${
                                 isOwn ? 'text-white/70' : 'text-muted-foreground'
@@ -326,10 +402,46 @@ const GlobalChat: React.FC = () => {
               )}
             </ScrollArea>
 
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="border-t border-border p-2">
+                <div className="relative inline-block">
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    className="h-20 w-20 rounded-lg object-cover"
+                  />
+                  <button
+                    onClick={clearImageSelection}
+                    className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-white shadow-md"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Input Area */}
             <div className="border-t border-border p-4">
               {isAuthenticated ? (
                 <div className="flex gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageSelect}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isSending || isUploading}
+                    className="shrink-0"
+                  >
+                    <Image className="h-5 w-5 text-muted-foreground" />
+                  </Button>
                   <Input
                     ref={inputRef}
                     value={messageInput}
@@ -337,16 +449,16 @@ const GlobalChat: React.FC = () => {
                     onKeyPress={handleKeyPress}
                     onBlur={stopTyping}
                     placeholder="Type a message..."
-                    disabled={isSending}
+                    disabled={isSending || isUploading}
                     className="flex-1"
                   />
                   <Button
                     onClick={handleSend}
-                    disabled={!messageInput.trim() || isSending}
+                    disabled={(!messageInput.trim() && !selectedImage) || isSending || isUploading}
                     size="icon"
                     className="bg-gradient-to-br from-primary to-secondary"
                   >
-                    {isSending ? (
+                    {isSending || isUploading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <Send className="h-4 w-4" />
