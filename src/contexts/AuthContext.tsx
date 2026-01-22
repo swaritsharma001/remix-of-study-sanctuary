@@ -72,6 +72,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setCookie(AUTH_TOKEN_COOKIE, response.token, expiryDate);
       setCookie(AUTH_EXPIRY_COOKIE, response.expiresAt, expiryDate);
       
+      // Store the key as a reference to get username later
+      // Fetch user name from keys API
+      try {
+        const keysResponse = await fetch('https://api.mintgram.live/keys');
+        if (keysResponse.ok) {
+          const keys = await keysResponse.json();
+          const matchingKey = keys.find((k: any) => k.authKey === key);
+          if (matchingKey?.name) {
+            setCookie('user_name', encodeURIComponent(matchingKey.name), expiryDate);
+          } else {
+            setCookie('user_name', 'Student', expiryDate);
+          }
+        }
+      } catch {
+        setCookie('user_name', 'Student', expiryDate);
+      }
+      
       setToken(response.token);
       setIsAuthenticated(true);
       return { success: true };
@@ -84,6 +101,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = () => {
     deleteCookie(AUTH_TOKEN_COOKIE);
     deleteCookie(AUTH_EXPIRY_COOKIE);
+    deleteCookie('user_name');
     setToken(null);
     setIsAuthenticated(false);
   };
