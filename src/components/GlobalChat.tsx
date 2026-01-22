@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X, Loader2, User, Smile, Users, Circle, Image, Paperclip } from 'lucide-react';
+import { MessageCircle, Send, X, Loader2, User, Smile, Users, Circle, Image, Reply, CornerDownRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useChat } from '@/hooks/useChat';
+import { useChat, ChatMessage } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 
@@ -18,6 +18,7 @@ const GlobalChat: React.FC = () => {
   const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const { 
     messages, 
     isLoading, 
@@ -26,6 +27,7 @@ const GlobalChat: React.FC = () => {
     isUploading,
     addReaction, 
     getMessageReactions,
+    getMessageById,
     typingUsers,
     onlineUsers,
     startTyping,
@@ -107,12 +109,22 @@ const GlobalChat: React.FC = () => {
       }
     }
     
-    const success = await sendMessage(messageInput, imageUrl || undefined);
+    const success = await sendMessage(messageInput, imageUrl || undefined, replyingTo?.id);
     if (success) {
       setMessageInput('');
       clearImageSelection();
+      setReplyingTo(null);
     }
     setIsSending(false);
+  };
+
+  const handleReply = (message: ChatMessage) => {
+    setReplyingTo(message);
+    inputRef.current?.focus();
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -271,6 +283,20 @@ const GlobalChat: React.FC = () => {
                         className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                       >
                         <div className="group relative max-w-[80%]">
+                          {/* Reply reference */}
+                          {msg.reply_to_message_id && (() => {
+                            const replyMsg = getMessageById(msg.reply_to_message_id);
+                            return replyMsg ? (
+                              <div className={`mb-1 flex items-center gap-1 text-xs ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                                <CornerDownRight className="h-3 w-3 text-muted-foreground" />
+                                <div className="rounded bg-muted/50 px-2 py-1 text-muted-foreground max-w-[200px] truncate">
+                                  <span className="font-medium">{replyMsg.user_name}:</span>{' '}
+                                  {replyMsg.message || (replyMsg.image_url ? '📷 Image' : '')}
+                                </div>
+                              </div>
+                            ) : null;
+                          })()}
+                          
                           <div
                             className={`rounded-2xl px-4 py-2 ${
                               isOwn
@@ -334,28 +360,40 @@ const GlobalChat: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Add reaction button */}
+                          {/* Message actions (reaction + reply) */}
                           {isAuthenticated && (
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <button className="absolute -right-2 top-0 hidden rounded-full bg-card p-1 shadow-md transition-all hover:bg-muted group-hover:block">
-                                  <Smile className="h-4 w-4 text-muted-foreground" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-2" side="top">
-                                <div className="flex gap-1">
-                                  {EMOJI_LIST.map((emoji) => (
-                                    <button
-                                      key={emoji}
-                                      onClick={() => handleReaction(msg.id, emoji)}
-                                      className="rounded p-1 text-lg transition-transform hover:scale-125 hover:bg-muted"
-                                    >
-                                      {emoji}
-                                    </button>
-                                  ))}
-                                </div>
-                              </PopoverContent>
-                            </Popover>
+                            <div className="absolute -right-2 top-0 hidden flex-row gap-1 group-hover:flex">
+                              {/* Reply button */}
+                              <button 
+                                onClick={() => handleReply(msg)}
+                                className="rounded-full bg-card p-1 shadow-md transition-all hover:bg-muted"
+                                title="Reply"
+                              >
+                                <Reply className="h-4 w-4 text-muted-foreground" />
+                              </button>
+                              
+                              {/* Reaction picker */}
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button className="rounded-full bg-card p-1 shadow-md transition-all hover:bg-muted">
+                                    <Smile className="h-4 w-4 text-muted-foreground" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-2" side="top">
+                                  <div className="flex gap-1">
+                                    {EMOJI_LIST.map((emoji) => (
+                                      <button
+                                        key={emoji}
+                                        onClick={() => handleReaction(msg.id, emoji)}
+                                        className="rounded p-1 text-lg transition-transform hover:scale-125 hover:bg-muted"
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
                           )}
                         </div>
                       </motion.div>
@@ -416,6 +454,28 @@ const GlobalChat: React.FC = () => {
                     className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-white shadow-md"
                   >
                     <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Reply Preview */}
+            {replyingTo && (
+              <div className="border-t border-border bg-muted/50 px-4 py-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Reply className="h-4 w-4 text-primary" />
+                    <span className="text-muted-foreground">Replying to</span>
+                    <span className="font-medium text-foreground">{replyingTo.user_name}</span>
+                    <span className="text-muted-foreground truncate max-w-[150px]">
+                      {replyingTo.message || (replyingTo.image_url ? '📷 Image' : '')}
+                    </span>
+                  </div>
+                  <button
+                    onClick={cancelReply}
+                    className="rounded-full p-1 hover:bg-muted"
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
                   </button>
                 </div>
               </div>

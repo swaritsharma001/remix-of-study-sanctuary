@@ -17,6 +17,7 @@ export interface ChatMessage {
   user_name: string;
   message: string;
   image_url?: string;
+  reply_to_message_id?: string;
   reactions?: ChatReaction[];
 }
 
@@ -88,7 +89,7 @@ export const useChat = () => {
   }, []);
 
   // Send a message
-  const sendMessage = useCallback(async (messageText: string, imageUrl?: string) => {
+  const sendMessage = useCallback(async (messageText: string, imageUrl?: string, replyToMessageId?: string) => {
     if (!token || (!messageText.trim() && !imageUrl)) return false;
 
     const userName = getUserName();
@@ -101,6 +102,7 @@ export const useChat = () => {
           user_name: userName,
           message: messageText.trim() || '',
           image_url: imageUrl || null,
+          reply_to_message_id: replyToMessageId || null,
         } as any);
 
       if (error) throw error;
@@ -354,6 +356,11 @@ export const useChat = () => {
     return reactions.filter(r => r.message_id === messageId);
   }, [reactions]);
 
+  // Get a message by ID (for replies)
+  const getMessageById = useCallback((messageId: string) => {
+    return messages.find(m => m.id === messageId);
+  }, [messages]);
+
   return {
     messages,
     isLoading,
@@ -362,6 +369,7 @@ export const useChat = () => {
     isUploading,
     addReaction,
     getMessageReactions,
+    getMessageById,
     typingUsers,
     onlineUsers,
     startTyping,
