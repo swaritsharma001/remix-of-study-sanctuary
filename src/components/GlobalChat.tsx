@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X, Loader2, User, Smile } from 'lucide-react';
+import { MessageCircle, Send, X, Loader2, User, Smile, Users, Circle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,6 +15,7 @@ const GlobalChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [showOnlineUsers, setShowOnlineUsers] = useState(false);
   const { 
     messages, 
     isLoading, 
@@ -22,6 +23,7 @@ const GlobalChat: React.FC = () => {
     addReaction, 
     getMessageReactions,
     typingUsers,
+    onlineUsers,
     startTyping,
     stopTyping,
     currentUserToken 
@@ -125,20 +127,65 @@ const GlobalChat: React.FC = () => {
             className="fixed bottom-6 right-6 z-50 flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl sm:w-[400px]"
           >
             {/* Header */}
-            <div className="flex items-center justify-between bg-gradient-to-r from-primary to-secondary p-4 text-white">
-              <div className="flex items-center gap-2">
-                <MessageCircle className="h-5 w-5" />
-                <span className="font-semibold">StudyX Chat</span>
+            <div className="bg-gradient-to-r from-primary to-secondary p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="font-semibold">StudyX Chat</span>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="rounded-full p-1 transition-colors hover:bg-white/20"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              {/* Online users bar */}
+              <div className="mt-2 flex items-center justify-between">
+                <Popover open={showOnlineUsers} onOpenChange={setShowOnlineUsers}>
+                  <PopoverTrigger asChild>
+                    <button className="flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-xs transition-colors hover:bg-white/30">
+                      <Circle className="h-2 w-2 fill-green-400 text-green-400" />
+                      <span>{onlineUsers.length} online</span>
+                      <Users className="h-3 w-3" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" side="bottom" align="start">
+                    <div className="mb-2 text-xs font-semibold text-muted-foreground">
+                      Online Users ({onlineUsers.length})
+                    </div>
+                    <ScrollArea className="max-h-40">
+                      {onlineUsers.length === 0 ? (
+                        <p className="py-2 text-center text-xs text-muted-foreground">
+                          No users online
+                        </p>
+                      ) : (
+                        <div className="space-y-1">
+                          {onlineUsers.map((user) => (
+                            <div
+                              key={user.user_token}
+                              className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted"
+                            >
+                              <Circle className="h-2 w-2 fill-green-500 text-green-500" />
+                              <span className="text-sm">
+                                {user.user_name}
+                                {user.user_token === currentUserToken && (
+                                  <span className="ml-1 text-xs text-muted-foreground">(you)</span>
+                                )}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
+                
                 <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
                   {messages.length} messages
                 </span>
               </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="rounded-full p-1 transition-colors hover:bg-white/20"
-              >
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
             {/* Messages Area */}
