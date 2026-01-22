@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Instagram, Twitter, Youtube, Mail, Heart } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import logo from '@/assets/logo.png';
 
 const Footer: React.FC = () => {
+  const navigate = useNavigate();
+  const [tapCount, setTapCount] = useState(0);
+  const tapTimeout = useRef<NodeJS.Timeout | null>(null);
+
   const socialLinks = [
     { icon: Instagram, href: '#', label: 'Instagram' },
     { icon: Twitter, href: '#', label: 'Twitter' },
@@ -11,16 +16,36 @@ const Footer: React.FC = () => {
     { icon: Mail, href: 'mailto:contact@studyx.com', label: 'Email' },
   ];
 
+  const handleLogoTap = () => {
+    if (tapTimeout.current) {
+      clearTimeout(tapTimeout.current);
+    }
+
+    const newCount = tapCount + 1;
+    setTapCount(newCount);
+
+    if (newCount >= 5) {
+      setTapCount(0);
+      navigate('/admin');
+      return;
+    }
+
+    tapTimeout.current = setTimeout(() => {
+      setTapCount(0);
+    }, 1000);
+  };
+
   return (
     <footer className="border-t border-border bg-card/50 backdrop-blur-sm">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center gap-6">
-          {/* Logo and Brand */}
+          {/* Logo and Brand - Tap 5 times to access admin */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="flex items-center gap-3"
+            className="flex items-center gap-3 cursor-pointer select-none"
+            onClick={handleLogoTap}
           >
             <img src={logo} alt="StudyX Logo" className="h-12 w-12 object-contain" />
             <span className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
