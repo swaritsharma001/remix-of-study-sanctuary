@@ -20,6 +20,7 @@ export type Database = {
           id: string
           image_url: string | null
           message: string
+          reply_to_message_id: string | null
           user_name: string
           user_token: string
         }
@@ -28,6 +29,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           message: string
+          reply_to_message_id?: string | null
           user_name: string
           user_token: string
         }
@@ -36,10 +38,19 @@ export type Database = {
           id?: string
           image_url?: string | null
           message?: string
+          reply_to_message_id?: string | null
           user_name?: string
           user_token?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_reactions: {
         Row: {
