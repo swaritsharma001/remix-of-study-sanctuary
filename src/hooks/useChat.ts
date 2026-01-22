@@ -24,13 +24,21 @@ export interface TypingUser {
   user_name: string;
 }
 
+export interface OnlineUser {
+  user_token: string;
+  user_name: string;
+  online_at: string;
+}
+
 export const useChat = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [reactions, setReactions] = useState<ChatReaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const { token } = useAuth();
   const typingChannelRef = useRef<any>(null);
+  const presenceChannelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get user name from cookie
@@ -182,6 +190,8 @@ export const useChat = () => {
     fetchMessages();
     fetchReactions();
 
+    const userName = getUserName();
+
     // Messages channel
     const messagesChannel = supabase
       .channel('chat_messages_realtime')
@@ -243,15 +253,50 @@ export const useChat = () => {
       })
       .subscribe();
 
+    // Online presence channel
+    const presenceChannel = supabase.channel('online_users');
+    presenceChannelRef.current = presenceChannel;
+
+    presenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const users: OnlineUser[] = [];
+        
+        Object.values(state).forEach((presences: any) => {
+          presences.forEach((presence: any) => {
+            // Avoid duplicates
+            if (!users.find(u => u.user_token === presence.user_token)) {
+              users.push({
+                user_token: presence.user_token,
+                user_name: presence.user_name,
+                online_at: presence.online_at,
+              });
+            }
+          });
+        });
+        
+        setOnlineUsers(users);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED' && token) {
+          await presenceChannel.track({
+            user_token: token,
+            user_name: userName,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(reactionsChannel);
       supabase.removeChannel(typingChannel);
+      supabase.removeChannel(presenceChannel);
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [fetchMessages, fetchReactions, token]);
+  }, [fetchMessages, fetchReactions, token, getUserName]);
 
   // Get reactions for a specific message
   const getMessageReactions = useCallback((messageId: string) => {
@@ -265,6 +310,7 @@ export const useChat = () => {
     addReaction,
     getMessageReactions,
     typingUsers,
+    onlineUsers,
     startTyping,
     stopTyping,
     currentUserToken: token,
