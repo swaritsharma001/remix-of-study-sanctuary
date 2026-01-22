@@ -11,6 +11,7 @@ import AuthModal from "@/components/AuthModal";
 import Navbar from "@/components/Navbar";
 import SplashScreen from "@/components/SplashScreen";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import GlobalChat from "@/components/GlobalChat";
 import NotificationPrompt from "@/components/NotificationPrompt";
 import ResubscribeAlert from "@/components/ResubscribeAlert";
 import Index from "./pages/Index";
@@ -50,6 +51,7 @@ const App = () => {
             <Toaster />
             <Sonner />
             <PWAInstallPrompt />
+            <GlobalChat />
             <NotificationPrompt />
             <ResubscribeAlert />
             {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
