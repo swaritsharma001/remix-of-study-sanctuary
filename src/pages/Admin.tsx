@@ -27,7 +27,7 @@ import {
   Plus, Trash2, BookOpen, Video, Loader2, Key, LogOut, Copy, Check, Users, 
   KeyRound, Shield, BarChart3, Bell, Send, Smartphone, ImagePlus, X, RefreshCw, 
   Globe, MessageSquare, Star, Reply, Mail, Sparkles, PartyPopper, Clock, 
-  Trophy, Calendar, Eye, Zap
+  Trophy, Calendar, Eye, Zap, MessageCircle, User
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -80,6 +80,28 @@ const Admin = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data as Feedback[];
+    },
+    enabled: false,
+  });
+
+  // Chat messages query
+  const { data: chatMessages, isLoading: chatLoading, refetch: refetchChat } = useQuery({
+    queryKey: ['admin-chat-messages'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data as Array<{
+        id: string;
+        created_at: string;
+        user_token: string;
+        user_name: string;
+        message: string;
+        image_url: string | null;
+      }>;
     },
     enabled: false,
   });
@@ -150,11 +172,15 @@ const Admin = () => {
     }
   }, []);
 
-  // Load keys and feedback when admin logs in
+  // Load keys, feedback, and chat when admin logs in
   useEffect(() => {
     if (isAdminLoggedIn) {
       loadKeys();
       refetchFeedback();
+      refetchChat();
+      localStorage.setItem('adminLoggedIn', 'true');
+    } else {
+      localStorage.removeItem('adminLoggedIn');
     }
   }, [isAdminLoggedIn]);
 
@@ -184,6 +210,24 @@ const Admin = () => {
   const handleAdminLogout = () => {
     setIsAdminLoggedIn(false);
     localStorage.removeItem('admin_session');
+    localStorage.removeItem('adminLoggedIn');
+  };
+
+  const handleDeleteChatMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      toast({ title: 'Success', description: 'Message deleted' });
+      refetchChat();
+    } catch (error) {
+      console.error('Delete chat error:', error);
+      toast({ title: 'Error', description: 'Failed to delete message', variant: 'destructive' });
+    }
   };
 
   const handleCreateKey = async () => {
@@ -612,11 +656,12 @@ const Admin = () => {
         </motion.div>
         
         <Tabs defaultValue="keys" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-8 h-auto p-1 bg-muted/50 backdrop-blur-sm">
+          <TabsList className="grid w-full grid-cols-8 mb-8 h-auto p-1 bg-muted/50 backdrop-blur-sm">
             {[
               { value: 'keys', icon: Key, label: 'Keys' },
               { value: 'subjects', icon: BookOpen, label: 'Subjects' },
               { value: 'lectures', icon: Video, label: 'Lectures' },
+              { value: 'chat', icon: MessageCircle, label: 'Chat' },
               { value: 'feedback', icon: MessageSquare, label: 'Feedback' },
               { value: 'emails', icon: Mail, label: 'Emails' },
               { value: 'notifications', icon: Bell, label: 'Push' },
@@ -1036,6 +1081,89 @@ const Admin = () => {
                           <p className="text-muted-foreground">No lectures found for this subject</p>
                         </div>
                       )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </TabsContent>
+
+          {/* Chat Tab */}
+          <TabsContent value="chat">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+              <Card className="border-2 shadow-lg">
+                <CardHeader className="bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <div className="h-8 w-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <MessageCircle className="h-4 w-4 text-primary" />
+                      </div>
+                      Chat Messages
+                      {chatMessages && (
+                        <Badge variant="secondary" className="ml-2">{chatMessages.length}</Badge>
+                      )}
+                    </CardTitle>
+                    <Button variant="outline" size="sm" onClick={() => refetchChat()} className="gap-2">
+                      <RefreshCw className={`h-4 w-4 ${chatLoading ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  {chatLoading ? (
+                    <div className="flex justify-center py-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : chatMessages && chatMessages.length > 0 ? (
+                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                      {chatMessages.map((msg, index) => (
+                        <motion.div
+                          key={msg.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.02 }}
+                          className="flex items-start justify-between gap-4 p-4 bg-gradient-to-r from-muted/50 to-transparent rounded-xl border hover:shadow-md transition-all"
+                        >
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            <div className="h-10 w-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-semibold text-sm">{msg.user_name}</p>
+                                <span className="text-xs text-muted-foreground">
+                                  {new Date(msg.created_at).toLocaleString()}
+                                </span>
+                              </div>
+                              {msg.message && (
+                                <p className="text-sm text-foreground/80 break-words">{msg.message}</p>
+                              )}
+                              {msg.image_url && (
+                                <a href={msg.image_url} target="_blank" rel="noopener noreferrer" className="block mt-2">
+                                  <img 
+                                    src={msg.image_url} 
+                                    alt="Chat image" 
+                                    className="max-w-[200px] max-h-[150px] rounded-lg object-cover hover:opacity-80 transition-opacity"
+                                  />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={() => handleDeleteChatMessage(msg.id)}
+                            className="shrink-0"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-muted-foreground">No chat messages found</p>
                     </div>
                   )}
                 </CardContent>
