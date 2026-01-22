@@ -235,7 +235,7 @@ const GlobalChat: React.FC = () => {
                       <Users className="h-3 w-3" />
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56 p-2" side="bottom" align="start">
+                  <PopoverContent className="z-[100] w-56 p-2 bg-popover border border-border shadow-lg" side="bottom" align="start">
                     <div className="mb-2 text-xs font-semibold text-muted-foreground">
                       Online Users ({onlineUsers.length})
                     </div>
@@ -252,7 +252,7 @@ const GlobalChat: React.FC = () => {
                               className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted"
                             >
                               <Circle className="h-2 w-2 fill-green-500 text-green-500" />
-                              <span className="text-sm">
+                              <span className="text-sm text-foreground">
                                 {user.user_name}
                                 {user.user_token === currentUserToken && (
                                   <span className="ml-1 text-xs text-muted-foreground">(you)</span>
@@ -377,24 +377,24 @@ const GlobalChat: React.FC = () => {
 
                           {/* Message actions (reaction + reply + delete) */}
                           {isAuthenticated && (
-                            <div className="absolute -right-2 top-0 hidden flex-row gap-1 group-hover:flex">
+                            <div className={`absolute ${isOwn ? '-left-2' : '-right-2'} top-0 hidden flex-row gap-1 group-hover:flex z-10`}>
                               {/* Reply button */}
                               <button 
                                 onClick={() => handleReply(msg)}
-                                className="rounded-full bg-card p-1 shadow-md transition-all hover:bg-muted"
+                                className="rounded-full bg-card border border-border p-1.5 shadow-md transition-all hover:bg-muted"
                                 title="Reply"
                               >
-                                <Reply className="h-4 w-4 text-muted-foreground" />
+                                <Reply className="h-3.5 w-3.5 text-muted-foreground" />
                               </button>
                               
                               {/* Reaction picker */}
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <button className="rounded-full bg-card p-1 shadow-md transition-all hover:bg-muted">
-                                    <Smile className="h-4 w-4 text-muted-foreground" />
+                                  <button className="rounded-full bg-card border border-border p-1.5 shadow-md transition-all hover:bg-muted">
+                                    <Smile className="h-3.5 w-3.5 text-muted-foreground" />
                                   </button>
                                 </PopoverTrigger>
-                                <PopoverContent className="w-auto p-2" side="top">
+                                <PopoverContent className="z-[100] w-auto p-2 bg-popover border border-border shadow-lg" side="top">
                                   <div className="flex gap-1">
                                     {EMOJI_LIST.map((emoji) => (
                                       <button
@@ -413,10 +413,10 @@ const GlobalChat: React.FC = () => {
                               {isAdmin && (
                                 <button 
                                   onClick={() => handleDeleteMessage(msg.id)}
-                                  className="rounded-full bg-destructive/10 p-1 shadow-md transition-all hover:bg-destructive/20"
+                                  className="rounded-full bg-destructive/10 border border-destructive/20 p-1.5 shadow-md transition-all hover:bg-destructive/20"
                                   title="Delete message"
                                 >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                 </button>
                               )}
                             </div>
@@ -431,30 +431,33 @@ const GlobalChat: React.FC = () => {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
                       className="flex justify-start"
                     >
-                      <div className="rounded-2xl bg-muted px-4 py-2">
-                        <div className="flex items-center gap-2">
-                          <div className="flex gap-1">
+                      <div className="rounded-2xl bg-muted/80 backdrop-blur-sm border border-border/50 px-4 py-2.5 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
                             <motion.span
-                              animate={{ y: [0, -4, 0] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1, repeat: Infinity, delay: 0 }}
                               className="h-2 w-2 rounded-full bg-primary"
                             />
                             <motion.span
-                              animate={{ y: [0, -4, 0] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
                               className="h-2 w-2 rounded-full bg-primary"
                             />
                             <motion.span
-                              animate={{ y: [0, -4, 0] }}
-                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                              animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                              transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
                               className="h-2 w-2 rounded-full bg-primary"
                             />
                           </div>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-xs font-medium text-muted-foreground">
                             {typingUsers.length === 1 
                               ? `${typingUsers[0].user_name} is typing...`
+                              : typingUsers.length === 2
+                              ? `${typingUsers[0].user_name} and ${typingUsers[1].user_name} are typing...`
                               : `${typingUsers.length} people are typing...`
                             }
                           </span>
