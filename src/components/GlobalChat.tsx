@@ -1,18 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Send, X, Loader2, User } from 'lucide-react';
+import { MessageCircle, Send, X, Loader2, User, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useChat } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+
+const EMOJI_LIST = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏', '🎉'];
 
 const GlobalChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const { messages, isLoading, sendMessage, currentUserToken } = useChat();
+  const { 
+    messages, 
+    isLoading, 
+    sendMessage, 
+    addReaction, 
+    getMessageReactions,
+    typingUsers,
+    startTyping,
+    stopTyping,
+    currentUserToken 
+  } = useChat();
   const { isAuthenticated } = useAuth();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -22,7 +35,7 @@ const GlobalChat: React.FC = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, typingUsers]);
 
   // Focus input when chat opens
   useEffect(() => {
@@ -35,6 +48,7 @@ const GlobalChat: React.FC = () => {
     if (!messageInput.trim() || isSending) return;
 
     setIsSending(true);
+    stopTyping();
     const success = await sendMessage(messageInput);
     if (success) {
       setMessageInput('');
@@ -47,6 +61,38 @@ const GlobalChat: React.FC = () => {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessageInput(e.target.value);
+    if (e.target.value.trim()) {
+      startTyping();
+    } else {
+      stopTyping();
+    }
+  };
+
+  const handleReaction = async (messageId: string, emoji: string) => {
+    await addReaction(messageId, emoji);
+  };
+
+  // Group reactions by emoji
+  const groupReactions = (messageId: string) => {
+    const msgReactions = getMessageReactions(messageId);
+    const grouped: { [emoji: string]: { count: number; users: string[]; hasOwn: boolean } } = {};
+    
+    msgReactions.forEach(r => {
+      if (!grouped[r.emoji]) {
+        grouped[r.emoji] = { count: 0, users: [], hasOwn: false };
+      }
+      grouped[r.emoji].count++;
+      grouped[r.emoji].users.push(r.user_name);
+      if (r.user_token === currentUserToken) {
+        grouped[r.emoji].hasOwn = true;
+      }
+    });
+    
+    return grouped;
   };
 
   return (
@@ -111,6 +157,8 @@ const GlobalChat: React.FC = () => {
                 <div className="space-y-3">
                   {messages.map((msg) => {
                     const isOwn = msg.user_token === currentUserToken;
+                    const groupedReactions = groupReactions(msg.id);
+                    
                     return (
                       <motion.div
                         key={msg.id}
@@ -118,31 +166,115 @@ const GlobalChat: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div
-                          className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                            isOwn
-                              ? 'bg-gradient-to-br from-primary to-secondary text-white'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          {!isOwn && (
-                            <div className="mb-1 flex items-center gap-1 text-xs font-semibold text-primary">
-                              <User className="h-3 w-3" />
-                              {msg.user_name}
-                            </div>
-                          )}
-                          <p className="break-words text-sm">{msg.message}</p>
-                          <p
-                            className={`mt-1 text-right text-[10px] ${
-                              isOwn ? 'text-white/70' : 'text-muted-foreground'
+                        <div className="group relative max-w-[80%]">
+                          <div
+                            className={`rounded-2xl px-4 py-2 ${
+                              isOwn
+                                ? 'bg-gradient-to-br from-primary to-secondary text-white'
+                                : 'bg-muted'
                             }`}
                           >
-                            {format(new Date(msg.created_at), 'hh:mm a')}
-                          </p>
+                            {!isOwn && (
+                              <div className="mb-1 flex items-center gap-1 text-xs font-semibold text-primary">
+                                <User className="h-3 w-3" />
+                                {msg.user_name}
+                              </div>
+                            )}
+                            <p className="break-words text-sm">{msg.message}</p>
+                            <p
+                              className={`mt-1 text-right text-[10px] ${
+                                isOwn ? 'text-white/70' : 'text-muted-foreground'
+                              }`}
+                            >
+                              {format(new Date(msg.created_at), 'hh:mm a')}
+                            </p>
+                          </div>
+
+                          {/* Reactions display */}
+                          {Object.keys(groupedReactions).length > 0 && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {Object.entries(groupedReactions).map(([emoji, data]) => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => handleReaction(msg.id, emoji)}
+                                  className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs transition-all ${
+                                    data.hasOwn
+                                      ? 'bg-primary/20 ring-1 ring-primary'
+                                      : 'bg-muted hover:bg-muted/80'
+                                  }`}
+                                  title={data.users.join(', ')}
+                                >
+                                  <span>{emoji}</span>
+                                  <span className="text-muted-foreground">{data.count}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Add reaction button */}
+                          {isAuthenticated && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className="absolute -right-2 top-0 hidden rounded-full bg-card p-1 shadow-md transition-all hover:bg-muted group-hover:block">
+                                  <Smile className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-2" side="top">
+                                <div className="flex gap-1">
+                                  {EMOJI_LIST.map((emoji) => (
+                                    <button
+                                      key={emoji}
+                                      onClick={() => handleReaction(msg.id, emoji)}
+                                      className="rounded p-1 text-lg transition-transform hover:scale-125 hover:bg-muted"
+                                    >
+                                      {emoji}
+                                    </button>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          )}
                         </div>
                       </motion.div>
                     );
                   })}
+
+                  {/* Typing indicator */}
+                  {typingUsers.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex justify-start"
+                    >
+                      <div className="rounded-2xl bg-muted px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1">
+                            <motion.span
+                              animate={{ y: [0, -4, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0 }}
+                              className="h-2 w-2 rounded-full bg-primary"
+                            />
+                            <motion.span
+                              animate={{ y: [0, -4, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }}
+                              className="h-2 w-2 rounded-full bg-primary"
+                            />
+                            <motion.span
+                              animate={{ y: [0, -4, 0] }}
+                              transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }}
+                              className="h-2 w-2 rounded-full bg-primary"
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {typingUsers.length === 1 
+                              ? `${typingUsers[0].user_name} is typing...`
+                              : `${typingUsers.length} people are typing...`
+                            }
+                          </span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               )}
             </ScrollArea>
@@ -154,8 +286,9 @@ const GlobalChat: React.FC = () => {
                   <Input
                     ref={inputRef}
                     value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
+                    onChange={handleInputChange}
                     onKeyPress={handleKeyPress}
+                    onBlur={stopTyping}
                     placeholder="Type a message..."
                     disabled={isSending}
                     className="flex-1"
