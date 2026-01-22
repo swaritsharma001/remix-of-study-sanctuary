@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
           message: string
           user_name: string
           user_token: string
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
           message: string
           user_name: string
           user_token: string
@@ -32,6 +34,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
           message?: string
           user_name?: string
           user_token?: string

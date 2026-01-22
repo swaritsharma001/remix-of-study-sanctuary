@@ -16,6 +16,7 @@ export interface ChatMessage {
   user_token: string;
   user_name: string;
   message: string;
+  image_url?: string;
   reactions?: ChatReaction[];
 }
 
@@ -36,6 +37,7 @@ export const useChat = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [typingUsers, setTypingUsers] = useState<TypingUser[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const { token } = useAuth();
   const typingChannelRef = useRef<any>(null);
   const presenceChannelRef = useRef<any>(null);
@@ -86,8 +88,8 @@ export const useChat = () => {
   }, []);
 
   // Send a message
-  const sendMessage = useCallback(async (messageText: string) => {
-    if (!token || !messageText.trim()) return false;
+  const sendMessage = useCallback(async (messageText: string, imageUrl?: string) => {
+    if (!token || (!messageText.trim() && !imageUrl)) return false;
 
     const userName = getUserName();
     
@@ -97,7 +99,8 @@ export const useChat = () => {
         .insert({
           user_token: token,
           user_name: userName,
-          message: messageText.trim(),
+          message: messageText.trim() || '',
+          image_url: imageUrl || null,
         } as any);
 
       if (error) throw error;
@@ -110,6 +113,35 @@ export const useChat = () => {
       return false;
     }
   }, [token, getUserName]);
+
+  // Upload image
+  const uploadImage = useCallback(async (file: File): Promise<string | null> => {
+    if (!token) return null;
+    
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `chat/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('chat-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-images')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  }, [token]);
 
   // Add reaction to message
   const addReaction = useCallback(async (messageId: string, emoji: string) => {
@@ -131,25 +163,35 @@ export const useChat = () => {
           .eq('id', existingReaction.id);
         
         if (error) throw error;
+        // Optimistically update state
+        setReactions(prev => prev.filter(r => r.id !== existingReaction.id));
       } else {
         // Add reaction
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('chat_reactions' as any)
           .insert({
             message_id: messageId,
             user_token: token,
             user_name: userName,
             emoji: emoji,
-          } as any);
+          } as any)
+          .select()
+          .single();
 
         if (error) throw error;
+        // Optimistically update state
+        if (data) {
+          setReactions(prev => [...prev, data as unknown as ChatReaction]);
+        }
       }
       return true;
     } catch (error) {
       console.error('Error toggling reaction:', error);
+      // Refetch reactions on error
+      fetchReactions();
       return false;
     }
-  }, [token, getUserName, reactions]);
+  }, [token, getUserName, reactions, fetchReactions]);
 
   // Start typing indicator
   const startTyping = useCallback(() => {
@@ -204,7 +246,11 @@ export const useChat = () => {
         },
         (payload) => {
           const newMessage = payload.new as ChatMessage;
-          setMessages((prev) => [...prev, newMessage]);
+          setMessages((prev) => {
+            // Avoid duplicates
+            if (prev.find(m => m.id === newMessage.id)) return prev;
+            return [...prev, newMessage];
+          });
         }
       )
       .subscribe();
@@ -221,7 +267,12 @@ export const useChat = () => {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setReactions((prev) => [...prev, payload.new as ChatReaction]);
+            const newReaction = payload.new as ChatReaction;
+            setReactions((prev) => {
+              // Avoid duplicates
+              if (prev.find(r => r.id === newReaction.id)) return prev;
+              return [...prev, newReaction];
+            });
           } else if (payload.eventType === 'DELETE') {
             setReactions((prev) => prev.filter(r => r.id !== (payload.old as any).id));
           }
@@ -307,6 +358,8 @@ export const useChat = () => {
     messages,
     isLoading,
     sendMessage,
+    uploadImage,
+    isUploading,
     addReaction,
     getMessageReactions,
     typingUsers,
