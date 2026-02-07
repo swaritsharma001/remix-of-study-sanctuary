@@ -17,16 +17,16 @@ const iconMap: Record<string, React.ElementType> = {
   science: FlaskConical,
 };
 
-// Color mapping for subjects with new emerald/violet palette
+// Color mapping for subjects - monochrome
 const colorMap: Record<string, string> = {
-  hindi: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
-  english: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-  maths: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
-  science: 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)',
+  hindi: 'linear-gradient(135deg, #333 0%, #555 100%)',
+  english: 'linear-gradient(135deg, #444 0%, #666 100%)',
+  maths: 'linear-gradient(135deg, #222 0%, #444 100%)',
+  science: 'linear-gradient(135deg, #555 0%, #777 100%)',
 };
 
 // Default gradient for unknown subjects
-const defaultColor = 'linear-gradient(135deg, #10b981 0%, #8b5cf6 100%)';
+const defaultColor = 'linear-gradient(135deg, #333 0%, #555 100%)';
 
 const containerVariants = {
   hidden: { opacity: 0 },

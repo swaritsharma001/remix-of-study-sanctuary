@@ -85,8 +85,8 @@ export default {
           to: { opacity: "1", transform: "scale(1)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(158 64% 52% / 0.3)" },
-          "50%": { boxShadow: "0 0 40px hsl(158 64% 52% / 0.5)" },
+          "0%, 100%": { boxShadow: "0 0 20px hsl(0 0% 50% / 0.3)" },
+          "50%": { boxShadow: "0 0 40px hsl(0 0% 50% / 0.5)" },
         },
         "gradient-x": {
           "0%, 100%": { backgroundPosition: "0% 50%" },
