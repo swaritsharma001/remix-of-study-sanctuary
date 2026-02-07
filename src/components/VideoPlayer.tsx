@@ -90,7 +90,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, lectureId, onProg
     return localStorage.getItem('videoPlayerAutoplay') !== 'false'; // default true
   });
 
-  const playbackSpeeds = [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
+  const playbackSpeeds = [1, 1.05, 1.10, 1.15, 1.20, 1.25, 1.30, 1.35, 1.45, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3];
 
   // Initialize HLS
   useEffect(() => {
