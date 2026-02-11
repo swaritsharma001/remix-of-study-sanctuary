@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Hls from 'hls.js';
+import { useWatchProgress } from '@/hooks/useWatchProgress';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, 
@@ -37,6 +38,8 @@ interface SubtitleTrack {
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, lectureId, onProgressUpdate }) => {
+  const { getSavedTime } = useWatchProgress();
+  const hasResumed = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -220,6 +223,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ src, title, lectureId, onProg
 
     const handleLoadedMetadata = () => {
       setDuration(video.duration);
+      // Resume from saved position
+      if (lectureId && !hasResumed.current) {
+        const savedTime = getSavedTime(lectureId);
+        if (savedTime > 0 && savedTime < video.duration - 5) {
+          video.currentTime = savedTime;
+          hasResumed.current = true;
+        }
+      }
     };
 
     const handleWaiting = () => setIsLoading(true);
