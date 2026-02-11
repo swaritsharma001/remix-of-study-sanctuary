@@ -448,7 +448,7 @@ const Admin = () => {
       }
 
       const registration = await navigator.serviceWorker.getRegistration('/push/');
-      const sub = await registration?.pushManager.getSubscription();
+      const sub = await (registration as any)?.pushManager.getSubscription();
       if (!sub) {
         toast({ title: 'No subscription', description: 'Could not find your push subscription', variant: 'destructive' });
         return;
