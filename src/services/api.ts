@@ -125,7 +125,7 @@ export const fetchSubjects = async (): Promise<ApiSubject[]> => {
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
-    handleApiError(response, 'Failed to fetch subjects');
+    handleApiError(response, 'Notice: All old lectures have been removed and are no longer available. Please contact the admin to get the Google Drive link. If you want to study from Physics Wallah, ask the admin for the link.');
   }
   return response.json();
 };
@@ -136,7 +136,7 @@ export const fetchLecturesBySubject = async (subjectId: string): Promise<ApiLect
     headers: getAuthHeaders(),
   });
   if (!response.ok) {
-    handleApiError(response, 'Failed to fetch lectures');
+    handleApiError(response, 'Notice: All old lectures have been removed and are no longer available. Please contact the admin to get the Google Drive link. If you want to study from Physics Wallah, ask the admin for the link.');
   }
   return response.json();
 };
@@ -149,7 +149,7 @@ export const addSubject = async (data: { subject: string; id: string }): Promise
     body: JSON.stringify(data),
   });
   if (!response.ok) {
-    handleApiError(response, 'Failed to add subject');
+    handleApiError(response, 'Notice: All old lectures have been removed and are no longer available. Please contact the admin to get the Google Drive link. If you want to study from Physics Wallah, ask the admin for the link.');
   }
   return response.json();
 };
