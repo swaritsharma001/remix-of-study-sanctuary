@@ -99,7 +99,7 @@ const Subject: React.FC = () => {
         {/* Error state */}
         {error && (
           <div className="mx-auto max-w-md rounded-xl bg-destructive/10 p-6 text-center">
-            <p className="text-destructive">{error instanceof Error ? error.message : 'Failed to load lectures. Please try again later.'}</p>
+            <p className="text-destructive">{error instanceof Error ? error.message : 'Notice: All old lectures have been removed and are no longer available. Please contact the admin to get the Google Drive link. If you want to study from Physics Wallah, ask the admin for the link.'}</p>
           </div>
         )}
 
